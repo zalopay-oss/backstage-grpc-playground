@@ -23,7 +23,7 @@ import { getMetadata, getUrl, storeUrl } from '../../../storage';
 import 'brace/theme/textmate';
 import 'brace/mode/json';
 import 'brace/mode/protobuf';
-// import { exportResponseToJSONFile } from "../../behaviour/response";
+import { exportResponseToJSONFile } from "../../../api";
 import Resizable from "re-resizable";
 import { AddressBar } from "./AddressBar";
 import { deleteEnvironment, getEnvironments, saveEnvironment } from "../../../storage/environments";
@@ -190,82 +190,89 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
     }
   }, []);
 
+  const onClickExport = async () => {
+    // TODO
+    if (protoInfo) {
+      exportResponseToJSONFile(protoInfo, state)
+    }
+  }
+
   return (
     <div style={styles.tabContainer}>
       <div style={styles.inputContainer}>
         <div style={{ width: "60%" }}>
           <AddressBar
-              protoInfo={protoInfo}
-              loading={state.loading}
-              url={state.url}
-              defaultEnvironment={state.environment}
-              environments={environmentList}
-              onChangeEnvironment={(environment) => {
+            protoInfo={protoInfo}
+            loading={state.loading}
+            url={state.url}
+            defaultEnvironment={state.environment}
+            environments={environmentList}
+            onChangeEnvironment={(environment) => {
 
-                if (!environment) {
-                  dispatch(setEnvironment(""));
-
-                  onRequestChange?.({
-                    ...state,
-                    environment: "",
-                  });
-                  return;
-                }
-
-                dispatch(setUrl(environment.url));
-                dispatch(setMetadata(environment.metadata));
-                dispatch(setEnvironment(environment.name));
-                dispatch(setTSLCertificate(environment.tlsCertificate));
-                dispatch(setInteractive(environment.interactive));
-
-                onRequestChange?.({
-                  ...state,
-                  environment: environment.name,
-                  url: environment.url,
-                  metadata: environment.metadata,
-                  tlsCertificate: environment.tlsCertificate,
-                  interactive: environment.interactive,
-                });
-              }}
-              onEnvironmentDelete={(environmentName) => {
-                deleteEnvironment(environmentName);
+              if (!environment) {
                 dispatch(setEnvironment(""));
+
                 onRequestChange?.({
                   ...state,
                   environment: "",
                 });
+                return;
+              }
 
-                onEnvironmentListChange?.(
-                    getEnvironments()
-                );
-              }}
-              onEnvironmentSave={(environmentName) => {
-                saveEnvironment({
-                  name: environmentName,
-                  url: state.url,
-                  interactive: state.interactive,
-                  metadata: state.metadata,
-                  tlsCertificate: state.tlsCertificate,
-                });
+              dispatch(setUrl(environment.url));
+              dispatch(setMetadata(environment.metadata));
+              dispatch(setEnvironment(environment.name));
+              dispatch(setTSLCertificate(environment.tlsCertificate));
+              dispatch(setInteractive(environment.interactive));
 
-                dispatch(setEnvironment(environmentName));
-                onRequestChange?.({
-                  ...state,
-                  environment: environmentName,
-                });
+              onRequestChange?.({
+                ...state,
+                environment: environment.name,
+                url: environment.url,
+                metadata: environment.metadata,
+                tlsCertificate: environment.tlsCertificate,
+                interactive: environment.interactive,
+              });
+            }}
+            onEnvironmentDelete={(environmentName) => {
+              deleteEnvironment(environmentName);
+              dispatch(setEnvironment(""));
+              onRequestChange?.({
+                ...state,
+                environment: "",
+              });
 
-                onEnvironmentListChange?.(
-                    getEnvironments()
-                );
-              }}
-              onChangeUrl={(e) => {
-                dispatch(setUrl(e.target.value));
-                storeUrl(e.target.value);
-                onRequestChange?.({
-                  ...state,
-                  url: e.target.value,
-                });
-              }}
+              onEnvironmentListChange?.(
+                getEnvironments()
+              );
+            }}
+            onEnvironmentSave={(environmentName) => {
+              saveEnvironment({
+                name: environmentName,
+                url: state.url,
+                interactive: state.interactive,
+                metadata: state.metadata,
+                tlsCertificate: state.tlsCertificate,
+              });
+
+              dispatch(setEnvironment(environmentName));
+              onRequestChange?.({
+                ...state,
+                environment: environmentName,
+              });
+
+              onEnvironmentListChange?.(
+                getEnvironments()
+              );
+            }}
+            onChangeUrl={(e) => {
+              dispatch(setUrl(e.target.value));
+              storeUrl(e.target.value);
+              onRequestChange?.({
+                ...state,
+                url: e.target.value,
+              });
+            }}
           />
         </div>
 
@@ -275,10 +282,7 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
             dispatch={dispatch}
             grpcWebChecked={state.grpcWeb}
             interactiveChecked={state.interactive}
-            onClickExport={async () => {
-              // TODO
-              // await exportResponseToJSONFile(protoInfo, state)
-            }}
+            onClickExport={onClickExport}
             onInteractiveChange={(checked) => {
               onRequestChange?.({
                 ...state,
@@ -299,12 +303,12 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
 
       <div style={styles.editorContainer}>
         <Resizable
-            enable={{ right: true }}
-            defaultSize={{
-              width: "50%",
-            }}
-            maxWidth="80%"
-            minWidth="10%"
+          enable={{ right: true }}
+          defaultSize={{
+            width: "50%",
+          }}
+          maxWidth="80%"
+          minWidth="10%"
         >
           <Request
             data={state.data}
@@ -324,15 +328,15 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
             ...(isControlVisible(state) ? styles.streamControlsContainer : {}),
           }}>
             <Controls
-                active={active}
-                dispatch={dispatch}
-                state={state}
-                protoInfo={protoInfo}
+              active={active}
+              dispatch={dispatch}
+              state={state}
+              protoInfo={protoInfo}
             />
           </div>
         </Resizable>
 
-        <div style={{...styles.responseContainer}}>
+        <div style={{ ...styles.responseContainer }}>
           <Response
             streamResponse={state.responseStreamData}
             response={state.response}

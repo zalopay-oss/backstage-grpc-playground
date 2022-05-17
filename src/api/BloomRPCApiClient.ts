@@ -4,7 +4,7 @@ import { ResponseError } from '@backstage/errors';
 import { ConfigApi, DiscoveryApi, FetchApi, IdentityApi } from "@backstage/core-plugin-api";
 import { ScmAuthApi } from "@backstage/integration-react";
 
-import { BloomRPCApi, BloomRPCRequestOptions, SendRequestPayload, SendRequestResponse, UploadProtoPayload, UploadProtoResponse } from "./BloomRPCApi";
+import { BloomRPCApi, BloomRPCRequestOptions, SendRequestPayload, SendRequestResponse, SendRequestStreamPayload, UploadProtoPayload, UploadProtoResponse } from "./BloomRPCApi";
 
 export class BloomRPCApiClient implements BloomRPCApi {
   private readonly discoveryApi: DiscoveryApi;
@@ -54,20 +54,47 @@ export class BloomRPCApiClient implements BloomRPCApi {
   }
 
   async sendServerRequest(payload: SendRequestPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
-    await this.fetchApi.fetch(
+    // let body: any;
+
+    // if ((payload as SendRequestStreamPayload).stream) {
+    //   body = (payload as SendRequestStreamPayload);
+    // } else {
+    //   body = JSON.stringify(payload);
+    // }
+
+    const fetch = options?.fetcher || this.fetchApi.fetch;
+
+    const res = await fetch(
       `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request`,
       {
+        ...(options?.fetchOptions || {}),
         headers: {
           'Content-Type': 'application/json',
           ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
         },
         method: 'POST',
-        // body: JSON.stringify({ entityRef }),
+        body: JSON.stringify(payload),
       },
     )
 
-    return {};
+    return res;
+  }
 
+  async sendServerRequestStream(payload: SendRequestStreamPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
+    const res = await this.fetchApi.fetch(
+      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request-stream`,
+      {
+        headers: {
+          'Content-Type': 'text/plain',
+          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
+        },
+        method: 'POST',
+        body: payload.stream,
+        ...{ allowHTTP1ForStreamingUpload: true } as any,
+      },
+    )
+
+    return res;
   }
 
   //

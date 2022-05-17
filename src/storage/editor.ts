@@ -1,4 +1,4 @@
-import { ProtoFile, EditorTabs, EditorRequest, EditorTabRequest } from '../api';
+import { ProtoFile, EditorTabs, EditorRequest, EditorTabRequest, SavedProto } from '../api';
 import { Store } from './Store';
 
 const EditorStore = new Store({
@@ -34,14 +34,19 @@ export function getUrl(): string | void {
  * @param protos
  */
 export function storeProtos(protos: ProtoFile[]) {
-  EditorStore.set(KEYS.PROTOS, protos.map(proto => proto.proto.protoText));
+  // EditorStore.set(KEYS.PROTOS, protos.map(proto => proto.proto.protoText));
+  EditorStore.set(KEYS.PROTOS, protos.map(proto => ({
+    fileName: proto.fileName,
+    protoText: proto.proto.protoText,
+  })));
 }
 
 /**
  * Get proto list
  */
-export function getProtos(): string[] | void {
-  return EditorStore.get(KEYS.PROTOS);
+// export function getProtos(): string[] | void {
+export function getProtos(): SavedProto[] {
+  return EditorStore.get(KEYS.PROTOS, []);
 }
 
 /**

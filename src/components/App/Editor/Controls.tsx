@@ -12,7 +12,7 @@ export interface ControlsStateProps {
   dispatch: React.Dispatch<EditorAction>
   state: EditorState
   protoInfo?: ProtoInfo
-  active?: boolean
+  active?: boolean;
 }
 
 export function Controls({ dispatch, state, protoInfo, active }: ControlsStateProps) {

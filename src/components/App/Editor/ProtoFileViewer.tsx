@@ -2,6 +2,7 @@ import * as React from 'react';
 import AceEditor from 'react-ace';
 import { Drawer } from 'antd';
 import { ProtoInfo } from '../../../api';
+// import { PlainApiDefinitionWidget } from '@backstage/plugin-api-docs';
 
 
 interface ProtoFileViewerProps {
@@ -15,26 +16,28 @@ export function ProtoFileViewer({ protoInfo, visible, onClose }: ProtoFileViewer
   return (
     <Drawer
       title={protoInfo.service.proto.fileName.split('/').pop()}
+      className='proto-drawer'
       placement="right"
-      width="50%"
+      width="50vw"
       closable={false}
       onClose={onClose}
       visible={visible}
     >
       <AceEditor
-        style={{ marginTop: "10px", background: "#fff" }}
+        style={{ 
+          marginTop: "10px",
+          background: "#fff",
+        }}
         width="100%"
-        height="calc(100vh - 115px)"
+        height="100%"
         mode="protobuf"
         theme="textmate"
         name="output"
         fontSize={13}
         showPrintMargin={false}
         wrapEnabled
-
-        showGutter={false}
+        showGutter
         readOnly
-        highlightActiveLine={false}
         value={protoInfo.service.proto.protoText}
         onLoad={(editor: any) => {
           editor.renderer.$cursorLayer.element.style.display = "none";
@@ -43,12 +46,16 @@ export function ProtoFileViewer({ protoInfo, visible, onClose }: ProtoFileViewer
         setOptions={{
           useWorker: true,
           displayIndentGuides: false,
-          showLineNumbers: false,
-          highlightGutterLine: false,
+          // showLineNumbers: false,
+          // highlightGutterLine: false,
           fixedWidthGutter: true,
           tabSize: 1,
         }}
       />
+      {/* <PlainApiDefinitionWidget
+        definition={protoInfo.service.proto.protoText}
+        language="protobuf"
+      /> */}
     </Drawer>
   );
 }

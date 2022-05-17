@@ -1,9 +1,12 @@
+/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-console */
-import { Proto, ProtoFile, ProtoService as ProtoServiceClient } from './protobuf';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { parse, Service } from 'protobufjs';
-import { mockRequestMethods, walkServices } from './bloomrpc-mock';
+import { fromJSON } from '@grpc/proto-loader';
 import { v4 as uuid } from 'uuid';
+
+import { Proto, ProtoFile, ProtoService as ProtoServiceClient, SavedProto } from './protobuf';
+import { mockRequestMethods, walkServices } from './bloomrpc-mock';
+import { loadPackageDefinition } from './makeClient';
 
 export type OnProtoUpload = (protoFiles: ProtoFile[], err?: Error) => void
 
@@ -22,7 +25,7 @@ export async function importProtos(onProtoUploaded: OnProtoUpload, importPaths?:
     return;
   }
 
-  await loadProtos(filePaths, onProtoUploaded);
+  // await loadProtos(filePaths, onProtoUploaded);
 }
 
 /**
@@ -40,26 +43,14 @@ export async function importProtosFromServerReflection(onProtoUploaded: OnProtoU
  * @param importPaths
  * @param onProtoUploaded
  */
-export async function loadProtos(protoPaths: string[], onProtoUploaded?: OnProtoUpload): Promise<ProtoFile[]> {
-  return loadProtosFromProtoTexts(protoPaths, onProtoUploaded);
+export function loadProtos(protoPaths: SavedProto[], onProtoUploaded?: OnProtoUpload): ProtoFile[] {
+  return loadProtosFromSavedProtos(protoPaths, onProtoUploaded);
 }
 
 export function createProtoFromFile(file: FileWithContent): Proto | null {
   if (!file.content) return null;
 
-  const parseResult = parse(file.content);
-
-  const fileName = file.name || `api-${uuid()}.proto`;
-
-  const proto: Proto = {
-    ast: parseResult.root,
-    fileName,
-    filePath: fileName,
-    protoText: file.content,
-    root: parseResult.root
-  };
-
-  return proto;
+  return createProtoFromProtoText(file.content, file.name);
 }
 
 export function createProtoFileFromProto(proto: Proto): ProtoFile {
@@ -72,13 +63,25 @@ export function createProtoFileFromProto(proto: Proto): ProtoFile {
   };
 }
 
-export function createProtoFromProtoText(protoText: string): Proto {
+export function createProtoFromProtoText(protoText: string, pFileName?: string): Proto {
   const parseResult = parse(protoText);
+  let ast = parseResult.root as any;
 
-  const fileName = `api-${uuid({})}.proto`;
+  // eslint-disable-next-line no-param-reassign
+  const fileName = pFileName || `api-${uuid({})}.proto`;
+
+  // TODO: display error
+  try {
+    const packageDefinition = fromJSON(parseResult.root);
+
+    ast = loadPackageDefinition(packageDefinition);
+  } catch (err) {
+    console.log('OUTPUT ~ createProtoFromProtoText ~ err', err);
+    // ignore
+  }
 
   const proto: Proto = {
-    ast: parseResult.root,
+    ast,
     fileName,
     filePath: fileName,
     protoText: protoText,
@@ -159,7 +162,44 @@ export async function readMultifiles(files: FileList): Promise<FileWithContent[]
  * @param importPaths
  * @param onProtoUploaded
  */
-export async function loadProtosFromProtoTexts(protoTexts: string[], onProtoUploaded?: OnProtoUpload): Promise<ProtoFile[]> {
+export function loadProtosFromSavedProtos(savedProtos: SavedProto[], onProtoUploaded?: OnProtoUpload): ProtoFile[] {
+  try {
+    const protoList = savedProtos.reduce((list: ProtoFile[], savedFile) => {
+      const proto = createProtoFromProtoText(savedFile.protoText, savedFile.fileName);
+
+      const services = parseServices(proto);
+
+      list.push({
+        proto,
+        fileName: proto.fileName,
+        services,
+      });
+
+      return list;
+    }, [])
+
+    onProtoUploaded?.(protoList, undefined);
+    return protoList;
+
+  } catch (e) {
+    console.error(e);
+    onProtoUploaded?.([], e);
+
+    if (!onProtoUploaded) {
+      throw e;
+    }
+
+    return [];
+  }
+}
+
+/**
+ * Load protocol buffer files
+ * @param filePaths
+ * @param importPaths
+ * @param onProtoUploaded
+ */
+export function loadProtosFromProtoTexts(protoTexts: string[], onProtoUploaded?: OnProtoUpload): ProtoFile[] {
   try {
     const protoList = protoTexts.reduce((list: ProtoFile[], protoText) => {
       const proto = createProtoFromProtoText(protoText);

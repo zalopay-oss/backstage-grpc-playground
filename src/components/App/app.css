@@ -184,3 +184,23 @@ a:hover {
     margin-left: 0px !important;
   }
 }
+
+.proto-drawer {
+
+}
+
+.proto-drawer .ant-drawer-title {
+  color: white;
+}
+
+.proto-drawer .ant-drawer-wrapper-body {
+  display: flex;
+  flex-flow: column nowrap;
+}
+
+.proto-drawer .ant-drawer-body {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}

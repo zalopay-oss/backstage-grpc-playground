@@ -6,12 +6,12 @@ import { Badge } from '../Badge/Badge';
 import { PathResolution } from "./PathResolution";
 import { getImportPaths } from "../../../storage";
 import { UrlResolution } from "./UrlResolution";
-import { 
+import {
   bloomRPCApiRef, UploadProtoResponse,
   ProtoFile, ProtoService,
-  importProtosFromServerReflection, loadProtosFromProtoTexts, 
+  importProtosFromServerReflection, loadProtosFromProtoTexts,
   OnProtoUpload, loadProtosFromFiles
- } from '../../../api';
+} from '../../../api';
 import { useApi } from '@backstage/core-plugin-api';
 
 interface SidebarProps {
@@ -83,8 +83,6 @@ export function Sidebar({ protos, onMethodSelected, onProtoUpload, onDeleteAll, 
 
   const onChangeFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // const protoTexts = await readMultifiles(e.target.files);
-      // const protoFiles = await loadProtosFromProtoTexts(protoTexts);
       const protoFiles = await loadProtosFromFiles(e.target.files);
 
       if (fileInputRef.current) {
@@ -95,18 +93,19 @@ export function Sidebar({ protos, onMethodSelected, onProtoUpload, onDeleteAll, 
         onProtoUpload(protoFiles);
       }
 
-      // bloomRPCApi.uploadProto({
-      //   files: e.target.files
-      // }).then((res: UploadProtoResponse) => {
-      //   // clear file input value
-      //   if (fileInputRef.current) {
-      //     fileInputRef.current.value = '';
-      //   }
-
-      //   if (res.protos) {
-      //     onProtoUpload(res.protos);
-      //   }
+      // const res: UploadProtoResponse = await bloomRPCApi.uploadProto({
+      //   files: e.target.files,
+      //   includeDirs: state.
       // })
+
+      // // clear file input value
+      // if (fileInputRef.current) {
+      //   fileInputRef.current.value = '';
+      // }
+
+      // if (res.protos) {
+      //   onProtoUpload(res.protos);
+      // }
     }
   }
 

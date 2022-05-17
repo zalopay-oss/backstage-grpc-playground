@@ -6,6 +6,12 @@ export class Store {
   private readonly name: string;
   private readonly keys: string[] = [];
 
+  private static globalKey: string;
+
+  static setGlobalKey(key: string) {
+    this.globalKey = key;
+  } 
+
   constructor(options: StoreOptions) {
     this.name = options.name;
   }
@@ -38,6 +44,6 @@ export class Store {
   }
 
   private createJoinedKey(key: string) {
-    return [this.name, key].join('-');
+    return [this.name, Store.globalKey, key].join('-');
   }
 }

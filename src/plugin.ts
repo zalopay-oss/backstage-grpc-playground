@@ -54,7 +54,7 @@ export const BloomrpcPage = bloomrpcPlugin.provide(
   createRoutableExtension({
     name: 'BloomRPC Plugin',
     component: () =>
-      import('./components/AppAntd').then(m => m.App),
+      import('./components/App').then(m => m.App),
     mountPoint: rootRouteRef,
   }),
 );
@@ -63,7 +63,7 @@ export const BloomrpcComponent = bloomrpcPlugin.provide(
   createComponentExtension({
     name: 'BloomRPC Plugin',
     component: {
-      lazy: () => import('./components/AppAntd').then(m => m.App)
+      lazy: () => import('./components/App').then(m => m.App)
     }
   }),
 );

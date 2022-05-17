@@ -1,16 +1,36 @@
 // @ts-ignore
-// eslint-disable-next-line import/no-extraneous-dependencies
+/* eslint-disable import/no-extraneous-dependencies */
 import { get as lodashGet } from 'lodash';
 import { ProtoService } from './protobuf';
+import { fromJSON, PackageDefinition, loadSync } from '@grpc/proto-loader';
+// import { loadPackageDefinition } from '@grpc/grpc-js';
 
 export class ProtoInfo {
 
   service: ProtoService;
   methodName: string;
+  packageDefinition: PackageDefinition;
 
   constructor(service: ProtoService, methodName: string) {
     this.service = service;
     this.methodName = methodName;
+    this.packageDefinition = fromJSON(service.proto.root);
+    
+    const serviceDefinition = this.serviceDef();
+    const methodDef = serviceDefinition.methods[this.methodName];
+
+    const { requestType, responseType } = methodDef;
+
+    if (!methodDef.resolvedRequestType) {
+      methodDef.resolvedRequestType = this.service.proto.root.lookupType(responseType);
+    }
+    
+    if (!methodDef.resolvedResponseType) {
+      methodDef.resolvedResponseType = this.service.proto.root.lookupType(requestType);
+    }
+
+    // console.log('this.service.proto.root', this.service.proto.root);
+
   }
 
   client(): any {
@@ -23,8 +43,9 @@ export class ProtoInfo {
 
   methodDef() {
     const serviceDefinition = this.serviceDef();
-    return serviceDefinition.methods[this.methodName];
+    return serviceDefinition.methods[this.methodName]; 
   }
+
 
   isClientStreaming() {
     const method = this.methodDef();

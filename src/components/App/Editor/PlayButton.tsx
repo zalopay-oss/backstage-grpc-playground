@@ -13,9 +13,10 @@ import {
   addResponseStreamData, setStreamCommitted
 } from './actions';
 import { ControlsStateProps } from './Controls';
-import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation } from '../../../api';
+import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, bloomRPCApiRef, SendServerRequest, SendServerRequestStream } from '../../../api';
+import { useApi } from '@backstage/core-plugin-api';
 
-export const makeRequest = ({ dispatch, state, protoInfo }: ControlsStateProps) => {
+export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest }: ControlsStateProps & { sendServerRequest: SendServerRequest | SendServerRequestStream }) => {
   // Do nothing if not set
   if (!protoInfo) {
     return;
@@ -30,8 +31,11 @@ export const makeRequest = ({ dispatch, state, protoInfo }: ControlsStateProps) 
   // Play button action:
   dispatch(setIsLoading(true));
 
-  let grpcRequest : GRPCEventEmitter
-  if (state.grpcWeb){
+  let grpcRequest: GRPCEventEmitter;
+
+  // TODO: handle server request
+  // eslint-disable-next-line no-constant-condition
+  if (state.grpcWeb) {
     grpcRequest = new GRPCWebRequest({
       url: state.url,
       inputs: state.data,
@@ -48,6 +52,7 @@ export const makeRequest = ({ dispatch, state, protoInfo }: ControlsStateProps) 
       protoInfo,
       interactive: state.interactive,
       tlsCertificate: state.tlsCertificate,
+      sendServerRequest,
     });
   }
 
@@ -74,6 +79,7 @@ export const makeRequest = ({ dispatch, state, protoInfo }: ControlsStateProps) 
   });
 
   grpcRequest.on(GRPCEventType.DATA, (data: object, metaInfo: ResponseMetaInformation) => {
+    console.log('OUTPUT ~ grpcRequest.on data ~ data', data, 'metaInfo', metaInfo);
     if (metaInfo.stream && state.interactive) {
       dispatch(addResponseStreamData({
         output: JSON.stringify(data, null, 2),
@@ -95,7 +101,7 @@ export const makeRequest = ({ dispatch, state, protoInfo }: ControlsStateProps) 
 
   try {
     grpcRequest.send();
-  } catch(e) {
+  } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e);
     notification.error({
@@ -108,20 +114,31 @@ export const makeRequest = ({ dispatch, state, protoInfo }: ControlsStateProps) 
         wordBreak: "break-all",
       }
     });
+
     grpcRequest.emit(GRPCEventType.END);
   }
 };
 
 export function PlayButton({ dispatch, state, protoInfo, active }: ControlsStateProps) {
+  const bloomRPCApi = useApi(bloomRPCApiRef);
+
+  // const sendServerRequest = React.useMemo(() =>
+  //   state.interactive ?
+  //     bloomRPCApi.sendServerRequestStream.bind(bloomRPCApi) :
+  //     bloomRPCApi.sendServerRequest.bind(bloomRPCApi), [state.interactive]);
+  const sendServerRequest = bloomRPCApi.sendServerRequest.bind(bloomRPCApi);
+
   React.useEffect(() => {
     if (!active) {
       return
     }
+
     Mousetrap.bindGlobal(['ctrl+enter', 'command+enter'], () => {
       if (state.loading) {
         return
       }
-      makeRequest({ dispatch, state, protoInfo })
+
+      makeRequest({ dispatch, state, protoInfo, sendServerRequest })
     })
   }, [
     // a bit of optimisation here: list all state properties needed in this component
@@ -131,13 +148,14 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
     state.metadata,
     state.interactive,
     state.tlsCertificate,
+    sendServerRequest,
   ])
 
   return (
     <Icon
       type={state.loading ? "pause-circle" : "play-circle"}
       theme="filled" style={{ ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) }}
-      onClick={() => makeRequest({ dispatch, state, protoInfo })}
+      onClick={() => makeRequest({ dispatch, state, protoInfo, sendServerRequest })}
     />
   )
 }

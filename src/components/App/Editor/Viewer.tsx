@@ -51,7 +51,7 @@ export function Viewer({ output, responseTime, emptyContent }: ResponseProps) {
 
       {!output && emptyContent}
 
-      { responseTime && (
+      { responseTime !== undefined && (
           <div style={styles.responseTime}>
             {responseTime.toFixed(3)}s
           </div>

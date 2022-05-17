@@ -7,3 +7,4 @@ export * from './protoInfo';
 export * from './sendRequest';
 export * from './tlsManager';
 export * from './types';
+export * from './exportResponse';
