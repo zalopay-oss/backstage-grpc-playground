@@ -69,6 +69,7 @@ export class GRPCServerRequest extends EventEmitter {
   tlsCertificate?: Certificate;
   _stream?: ReadableStream;
   _call?: ReadableStreamController<any>;
+  _ctrl: AbortController;
   _sendServerRequest: SendServerRequest | SendServerRequestStream;
   _doCall?: () => Promise<void>;
   requestData: any = {};
@@ -91,6 +92,7 @@ export class GRPCServerRequest extends EventEmitter {
     this.tlsCertificate = tlsCertificate;
     this._call = undefined;
     this._sendServerRequest = sendServerRequest;
+    this._ctrl = new AbortController();
 
     const methodDef = this.protoInfo.methodDef();
     if (methodDef.requestStream) {
@@ -111,6 +113,7 @@ export class GRPCServerRequest extends EventEmitter {
 
       const methodDef = this.protoInfo.methodDef();
 
+      // eslint-disable-next-line no-constant-condition
       if (false && methodDef.requestStream) {
         payload = {
           stream: this._stream!,
@@ -140,15 +143,15 @@ export class GRPCServerRequest extends EventEmitter {
         };
 
         let fetcher: any;
-        let fetchOptions: any;
+        let fetchOptions: Partial<RequestInit> = {
+          signal: this._ctrl.signal,
+        };
 
         if (methodDef.responseStream || methodDef.requestStream) {
-          const ctrl = new AbortController();
-
           fetcher = fetchEventSource;
 
           fetchOptions = {
-            signal: ctrl.signal,
+            ...fetchOptions,
             onmessage: (ev) => {
               if (!ev.data) return;
               console.log('do call ~ onmessage', 'ev.event', ev.event, 'data', ev.data);
@@ -178,7 +181,9 @@ export class GRPCServerRequest extends EventEmitter {
               console.log('OUTPUT ~ GRPCServerRequest ~ doCall ~ onerror ~ err', err);
               this.emit(GRPCEventType.ERROR, err, {});
 
-              ctrl.abort();
+              this._ctrl.abort();
+
+              this.emit(GRPCEventType.END);
               throw err;
             }
           } as FetchEventSourceInit;
@@ -290,6 +295,11 @@ export class GRPCServerRequest extends EventEmitter {
     if (this._call) {
       // this._call.cancel();
       this._call.close();
+    }
+
+    if (this._ctrl) {
+      console.log('aborting request');
+      this._ctrl?.abort?.();
     }
 
     this.emit(GRPCEventType.END);
