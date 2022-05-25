@@ -31,13 +31,15 @@ export class BloomRPCApiClient implements BloomRPCApi {
   }
 
   async getProto(payload: GetProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse> {
+    const { token } = await this.identityApi.getCredentials();
+
     const res = await this.fetchApi.fetch(
       `${await this.discoveryApi.getBaseUrl('bloomrpc')}/proto-info/${this.entityName}`,
       {
         ...(options?.fetchOptions || {}),
         headers: {
           'Content-Type': 'application/json',
-          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         method: 'POST',
         body: JSON.stringify(payload),
@@ -50,6 +52,8 @@ export class BloomRPCApiClient implements BloomRPCApi {
   }
 
   async uploadProto(payload: UploadProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse> {
+    const { token } = await this.identityApi.getCredentials();
+
     const formData = new FormData();
     if (!payload.files?.length) {
       throw new Error('Empty');
@@ -71,7 +75,7 @@ export class BloomRPCApiClient implements BloomRPCApi {
       `${await this.discoveryApi.getBaseUrl('bloomrpc')}/upload-proto/${this.entityName}`,
       {
         headers: {
-          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: formData,
         method: 'POST',
@@ -84,6 +88,8 @@ export class BloomRPCApiClient implements BloomRPCApi {
   }
 
   async sendServerRequest(payload: SendRequestPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
+    const { token } = await this.identityApi.getCredentials();
+
     const fetch = options?.fetcher || this.fetchApi.fetch;
 
     const res = await fetch(
@@ -92,7 +98,7 @@ export class BloomRPCApiClient implements BloomRPCApi {
         ...(options?.fetchOptions || {}),
         headers: {
           'Content-Type': 'application/json',
-          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         method: 'POST',
         body: JSON.stringify(payload),
@@ -103,12 +109,14 @@ export class BloomRPCApiClient implements BloomRPCApi {
   }
 
   async sendServerRequestStream(payload: SendRequestStreamPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
+    const { token } = await this.identityApi.getCredentials();
+
     const res = await this.fetchApi.fetch(
       `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request-stream/${this.entityName}`,
       {
         headers: {
           'Content-Type': 'text/plain',
-          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         method: 'POST',
         body: payload.stream,
