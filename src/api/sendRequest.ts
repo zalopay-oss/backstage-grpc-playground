@@ -123,6 +123,7 @@ export class GRPCServerRequest extends EventEmitter {
         };
 
         if (methodDef.responseStream || methodDef.requestStream) {
+          // Stream request with fetch-event-source
           fetcher = fetchEventSource;
 
           fetchOptions = {
@@ -171,48 +172,26 @@ export class GRPCServerRequest extends EventEmitter {
           .then(async (res) => {
             if (!res) return;
 
-            const reader = res.body?.pipeThrough(new TextDecoderStream()).getReader();
-            if (!reader) {
-              // not stream
-              try {
-                const { error, data, metaInfo } = await res.json();
-                console.log('OUTPUT ~ GRPCServerRequest ~ .then ~ data', data);
+            try {
+              // Unary
+              const { error, data, metaInfo } = await res.json();
 
-                if (error) {
-                  const errorThrow = new Error(error.details);
+              if (error) {
+                const errorThrow = new Error(error.details);
 
-                  this.emit(GRPCEventType.ERROR, errorThrow, metaInfo);
-                }
-
-                if (data) {
-                  this.emit(GRPCEventType.DATA, data, metaInfo);
-                }
-              } catch (err) {
-                console.log('err', err);
+                this.emit(GRPCEventType.ERROR, errorThrow, metaInfo);
               }
 
-              this.emit(GRPCEventType.END);
-              return;
-            };
-
-            // eslint-disable-next-line no-constant-condition
-            while (true) {
-              // read eventstream
-              const { value, done } = await reader.read();
-              if (done) break;
-
-              const values = value.split('\n');
-              values.forEach((val) => {
-                if (val.startsWith('data: ')) {
-                  const { data, metaInfo } = JSON.parse(val.split('data: ')[1]);
-                  this.emit(GRPCEventType.DATA, data, metaInfo);
-                }
-              });
+              if (data) {
+                this.emit(GRPCEventType.DATA, data, metaInfo);
+              }
+            } catch (err) {
+              console.log('err', err);
             }
-
-            this.emit(GRPCEventType.END);
           }).catch(e => {
             this.emit(GRPCEventType.ERROR, e, {});
+          }).finally(() => {
+            this.emit(GRPCEventType.END);
           })
       }
 
