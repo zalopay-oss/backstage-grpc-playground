@@ -66,12 +66,10 @@ a:hover {
 }
 
 
-.response-edit {
-
-.ace_gutter > .ace_layer {
+.response-edit .ace_gutter > .ace_layer {
   margin-left: -15px;
 }
-}
+
 
 .find-match {
   border-radius: 0;
@@ -85,11 +83,11 @@ a:hover {
 .ant-drawer-header {
   background: #001529;
   border-radius: 0px;
+}
 
-.ant-drawer-title {
+.ant-drawer-header .ant-drawer-title {
   color: #fff;
   font-weight: 700;
-}
 }
 
 .ant-tabs-nav-scroll {
@@ -125,16 +123,15 @@ a:hover {
 
 .ant-modal-header {
   background: #001529;
-  border-bottom: none;
-  .ant-modal-title {
-    color: #fff;
-  }
+  border-bottom: none; 
 }
 
-.ant-modal-content {
-.ant-modal-close-x {
+.ant-modal-header .ant-modal-title {
   color: #fff;
 }
+
+.ant-modal-content .ant-modal-close-x {
+  color: #fff;
 }
 
 .draggable-tab {
@@ -154,20 +151,20 @@ a:hover {
 
   border: 1px solid rgba(0, 21, 41, 0.18);
   border-bottom: 0;
+}
 
-  .ant-tabs-close-x {
-    width: 16px;
-    height: 16px;
-    height: 14px;
-    margin-right: -5px;
-    margin-left: 3px;
-    overflow: hidden;
-    color: rgba(0, 0, 0, 0.45);
-    font-size: 12px;
-    vertical-align: middle;
-    -webkit-transition: all 0.3s;
-    transition: all 0.3s;
-  }
+.draggable-tab .ant-tabs-close-x {
+  width: 16px;
+  height: 16px;
+  height: 14px;
+  margin-right: -5px;
+  margin-left: 3px;
+  overflow: hidden;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  vertical-align: middle;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
 }
 
 .draggable-tab.active {
@@ -178,11 +175,9 @@ a:hover {
     display: inline-block;
 }
 
-.env-modal {
-  .ant-modal-confirm-content {
-    margin-top: 20px;
-    margin-left: 0px !important;
-  }
+.env-modal .ant-modal-confirm-content {
+  margin-top: 20px;
+  margin-left: 0px !important;
 }
 
 .proto-drawer {

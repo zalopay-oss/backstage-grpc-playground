@@ -1,10 +1,7 @@
-/* eslint-disable import/no-extraneous-dependencies */
-import crossFetch from 'cross-fetch';
-import { ResponseError } from '@backstage/errors';
 import { ConfigApi, DiscoveryApi, FetchApi, IdentityApi } from "@backstage/core-plugin-api";
 import { ScmAuthApi } from "@backstage/integration-react";
 
-import { BloomRPCApi, BloomRPCRequestOptions, SendRequestPayload, SendRequestResponse, SendRequestStreamPayload, UploadProtoPayload, UploadProtoResponse } from "./BloomRPCApi";
+import { BloomRPCApi, BloomRPCRequestOptions, GetProtoPayload, SendRequestPayload, SendRequestResponse, SendRequestStreamPayload, UploadProtoPayload, UploadProtoResponse } from "./BloomRPCApi";
 
 export class BloomRPCApiClient implements BloomRPCApi {
   private readonly discoveryApi: DiscoveryApi;
@@ -12,6 +9,7 @@ export class BloomRPCApiClient implements BloomRPCApi {
   private readonly scmAuthApi: ScmAuthApi;
   private readonly configApi: ConfigApi;
   private readonly fetchApi: FetchApi;
+  private entityName: string;
 
   constructor(options: {
     discoveryApi: DiscoveryApi;
@@ -24,7 +22,31 @@ export class BloomRPCApiClient implements BloomRPCApi {
     this.scmAuthApi = options.scmAuthApi;
     this.identityApi = options.identityApi;
     this.configApi = options.configApi;
-    this.fetchApi = options.fetchApi || { fetch: crossFetch };
+    this.fetchApi = options.fetchApi || { fetch: window.fetch.bind(window) };
+    this.entityName = '';
+  }
+
+  setEntityName = (entityName: string) => {
+    this.entityName = entityName;
+  }
+
+  async getProto(payload: GetProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse> {
+    const res = await this.fetchApi.fetch(
+      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/proto-info/${this.entityName}`,
+      {
+        ...(options?.fetchOptions || {}),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
+        },
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    )
+
+    const data = await res.json();
+
+    return data;
   }
 
   async uploadProto(payload: UploadProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse> {
@@ -37,8 +59,16 @@ export class BloomRPCApiClient implements BloomRPCApi {
       formData.append('files[]', file, file.name);
     }
 
+    if (payload.isImport) {
+      formData.append('importFor', JSON.stringify(payload.isImport));
+    }
+
+    if (payload.fileMappings) {
+      formData.append('fileMappings', JSON.stringify(payload.fileMappings));
+    }
+
     const res = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/upload-proto`,
+      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/upload-proto/${this.entityName}`,
       {
         headers: {
           ...(options?.token && { Authorization: `Bearer ${options?.token}` }),
@@ -54,18 +84,10 @@ export class BloomRPCApiClient implements BloomRPCApi {
   }
 
   async sendServerRequest(payload: SendRequestPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
-    // let body: any;
-
-    // if ((payload as SendRequestStreamPayload).stream) {
-    //   body = (payload as SendRequestStreamPayload);
-    // } else {
-    //   body = JSON.stringify(payload);
-    // }
-
     const fetch = options?.fetcher || this.fetchApi.fetch;
 
     const res = await fetch(
-      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request`,
+      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request/${this.entityName}`,
       {
         ...(options?.fetchOptions || {}),
         headers: {
@@ -82,7 +104,7 @@ export class BloomRPCApiClient implements BloomRPCApi {
 
   async sendServerRequestStream(payload: SendRequestStreamPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
     const res = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request-stream`,
+      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request-stream/${this.entityName}`,
       {
         headers: {
           'Content-Type': 'text/plain',
@@ -95,64 +117,5 @@ export class BloomRPCApiClient implements BloomRPCApi {
     )
 
     return res;
-  }
-
-  //
-  // Private methods
-  //
-
-  private async requestIgnored(
-    method: string,
-    path: string,
-    options?: BloomRPCRequestOptions,
-  ): Promise<void> {
-    const url = `${await this.discoveryApi.getBaseUrl('bloomrpc')}${path}`;
-    const headers: Record<string, string> = options?.token
-      ? { Authorization: `Bearer ${options.token}` }
-      : {};
-    const response = await this.fetchApi.fetch(url, { method, headers });
-
-    if (!response.ok) {
-      throw await ResponseError.fromResponse(response);
-    }
-  }
-
-  private async requestRequired(
-    method: string,
-    path: string,
-    options?: BloomRPCRequestOptions,
-  ): Promise<any> {
-    const url = `${await this.discoveryApi.getBaseUrl('bloomrpc')}${path}`;
-    const headers: Record<string, string> = options?.token
-      ? { Authorization: `Bearer ${options.token}` }
-      : {};
-    const response = await this.fetchApi.fetch(url, { method, headers });
-
-    if (!response.ok) {
-      throw await ResponseError.fromResponse(response);
-    }
-
-    return await response.json();
-  }
-
-  private async requestOptional(
-    method: string,
-    path: string,
-    options?: BloomRPCRequestOptions,
-  ): Promise<any | undefined> {
-    const url = `${await this.discoveryApi.getBaseUrl('catalog')}${path}`;
-    const headers: Record<string, string> = options?.token
-      ? { Authorization: `Bearer ${options.token}` }
-      : {};
-    const response = await this.fetchApi.fetch(url, { method, headers });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return undefined;
-      }
-      throw await ResponseError.fromResponse(response);
-    }
-
-    return await response.json();
   }
 }

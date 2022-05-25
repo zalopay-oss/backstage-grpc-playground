@@ -35,10 +35,14 @@ export function getUrl(): string | void {
  */
 export function storeProtos(protos: ProtoFile[]) {
   // EditorStore.set(KEYS.PROTOS, protos.map(proto => proto.proto.protoText));
-  EditorStore.set(KEYS.PROTOS, protos.map(proto => ({
+  const protosToSave: SavedProto[] = protos.map(proto => ({
     fileName: proto.fileName,
-    protoText: proto.proto.protoText,
-  })));
+    // protoText: proto.proto.protoText,
+    filePath: proto.proto.filePath,
+    importPaths: proto.proto.importPaths,
+  }));
+
+  EditorStore.set(KEYS.PROTOS, protosToSave);
 }
 
 /**
@@ -54,16 +58,19 @@ export function getProtos(): SavedProto[] {
  * @param editorTabs
  */
 export function storeTabs(editorTabs: EditorTabs) {
-  EditorStore.set(KEYS.TABS, {
+  const tabsToSave: EditorTabsStorage = {
     activeKey: editorTabs.activeKey,
     tabs: editorTabs.tabs.map((tab) => ({
       methodName: tab.methodName,
       serviceName: tab.service.serviceName,
       protoPath: tab.service.proto.filePath,
-      protoText: tab.service.proto.protoText,
+      importPaths: tab.service.proto.importPaths,
+      // protoText: tab.service.proto.protoText,
       tabKey: tab.tabKey,
-    })),
-  })
+    }))
+  };
+
+  EditorStore.set(KEYS.TABS, tabsToSave)
 }
 
 export interface EditorTabsStorage {
@@ -73,7 +80,8 @@ export interface EditorTabsStorage {
     methodName: string,
     serviceName: string,
     tabKey: string,
-    protoText: string,
+    // protoText: string,
+    importPaths?: string[]
   }[]
 }
 

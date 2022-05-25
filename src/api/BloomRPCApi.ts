@@ -1,5 +1,6 @@
 import { createApiRef } from "@backstage/core-plugin-api";
 import { ProtoFile } from "./protobuf";
+import { EntitySpec, LoadProtoStatus, MissingImportFile } from "./types";
 
 /**
  * Options you can pass into a catalog request for additional information.
@@ -12,19 +13,27 @@ export interface BloomRPCRequestOptions {
   fetchOptions?: any;
 }
 
+export interface GetProtoPayload {
+  entitySpec: EntitySpec;
+}
+
 export interface UploadProtoPayload {
-  files: FileList;
-  includeDirs?: string[];
+  files: FileList | File[];
+  isImport?: MissingImportFile;
+  fileMappings?: Record<string, string>;
 }
 
 export interface UploadProtoResponse {
-  status: string;
-  protos?: ProtoFile[]
+  status: LoadProtoStatus;
+  protos?: ProtoFile[];
+  missingImports?: MissingImportFile[];
+  message?: string;
 }
 
 export interface SendRequestPayload {
   requestId: string;
   proto: string;
+  importPaths?: string[];
   requestData: {
     inputs: Object;
     metadata: Object;
@@ -54,6 +63,10 @@ export const bloomRPCApiRef = createApiRef<BloomRPCApi>({
   id: 'plugin.bloomrpc.service',
 });
 
+export interface GetProtoRequest {
+  (payload: GetProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse>
+}
+
 export interface UploadProtoRequest {
   (payload: UploadProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse>
 }
@@ -71,4 +84,6 @@ export interface BloomRPCApi {
   uploadProto: UploadProtoRequest;
   sendServerRequest: SendServerRequest;
   sendServerRequestStream: SendServerRequestStream;
+  getProto: GetProtoRequest;
+  setEntityName: (entity: string) => void;
 }

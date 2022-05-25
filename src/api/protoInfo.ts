@@ -1,36 +1,27 @@
 // @ts-ignore
-/* eslint-disable import/no-extraneous-dependencies */
-import { get as lodashGet } from 'lodash';
+import lodashGet from 'lodash.get';
 import { ProtoService } from './protobuf';
-import { fromJSON, PackageDefinition, loadSync } from '@grpc/proto-loader';
-// import { loadPackageDefinition } from '@grpc/grpc-js';
 
 export class ProtoInfo {
-
   service: ProtoService;
   methodName: string;
-  packageDefinition: PackageDefinition;
 
   constructor(service: ProtoService, methodName: string) {
     this.service = service;
     this.methodName = methodName;
-    this.packageDefinition = fromJSON(service.proto.root);
+
+    // const serviceDefinition = this.serviceDef();
+    // const methodDef = serviceDefinition.methods[this.methodName];
+
+    // const { requestType, responseType } = methodDef;
+
+    // if (!methodDef.resolvedRequestType) {
+    //   methodDef.resolvedRequestType = this.service.proto.root.lookupType(responseType);
+    // }
     
-    const serviceDefinition = this.serviceDef();
-    const methodDef = serviceDefinition.methods[this.methodName];
-
-    const { requestType, responseType } = methodDef;
-
-    if (!methodDef.resolvedRequestType) {
-      methodDef.resolvedRequestType = this.service.proto.root.lookupType(responseType);
-    }
-    
-    if (!methodDef.resolvedResponseType) {
-      methodDef.resolvedResponseType = this.service.proto.root.lookupType(requestType);
-    }
-
-    // console.log('this.service.proto.root', this.service.proto.root);
-
+    // if (!methodDef.resolvedResponseType) {
+    //   methodDef.resolvedResponseType = this.service.proto.root.lookupType(requestType);
+    // }
   }
 
   client(): any {
@@ -38,7 +29,8 @@ export class ProtoInfo {
   }
 
   serviceDef() {
-    return this.service.proto.root.lookupService(this.service.serviceName);
+    // return this.service.proto.root.lookupService(this.service.serviceName);
+    return this.service.definition;
   }
 
   methodDef() {

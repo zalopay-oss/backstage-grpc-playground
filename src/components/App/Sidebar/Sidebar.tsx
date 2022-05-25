@@ -1,18 +1,16 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import React, { useEffect, useState, useRef, CSSProperties } from "react";
+import React, { useEffect, useState, CSSProperties } from "react";
 import { Menu, Button, Icon, Dropdown, Modal, Tooltip, Tree, Input } from 'antd';
 import { Badge } from '../Badge/Badge';
 import { PathResolution } from "./PathResolution";
 import { getImportPaths } from "../../../storage";
 import { UrlResolution } from "./UrlResolution";
 import {
-  bloomRPCApiRef, UploadProtoResponse,
   ProtoFile, ProtoService,
-  importProtosFromServerReflection, loadProtosFromProtoTexts,
-  OnProtoUpload, loadProtosFromFiles
+  importProtosFromServerReflection,
+  OnProtoUpload,
 } from '../../../api';
-import { useApi } from '@backstage/core-plugin-api';
 
 interface SidebarProps {
   protos: ProtoFile[]
@@ -20,20 +18,17 @@ interface SidebarProps {
   onProtoUpload: OnProtoUpload
   onDeleteAll: () => void
   onReload: () => void
+  openFileUpload: (directory?: boolean) => void;
   onMethodDoubleClick: (methodName: string, protoService: ProtoService) => void
 }
 
-export function Sidebar({ protos, onMethodSelected, onProtoUpload, onDeleteAll, onReload, onMethodDoubleClick }: SidebarProps) {
+export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUpload, onDeleteAll, onReload, onMethodDoubleClick }: SidebarProps) {
 
   const [importPaths, setImportPaths] = useState<string[]>([""]);
   const [importPathVisible, setImportPathsVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filterMatch, setFilterMatch] = useState<string | null>(null);
   const [importReflectionVisible, setImportReflectionVisible] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const bloomRPCApi = useApi(bloomRPCApiRef);
 
   useEffect(() => {
     setImportPaths(getImportPaths());
@@ -75,40 +70,6 @@ export function Sidebar({ protos, onMethodSelected, onProtoUpload, onDeleteAll, 
     }
   }
 
-  const openFileUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const onChangeFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const protoFiles = await loadProtosFromFiles(e.target.files);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
-      if (protoFiles) {
-        onProtoUpload(protoFiles);
-      }
-
-      // const res: UploadProtoResponse = await bloomRPCApi.uploadProto({
-      //   files: e.target.files,
-      //   includeDirs: state.
-      // })
-
-      // // clear file input value
-      // if (fileInputRef.current) {
-      //   fileInputRef.current.value = '';
-      // }
-
-      // if (res.protos) {
-      //   onProtoUpload(res.protos);
-      // }
-    }
-  }
-
   return (
     <>
       <div style={styles.sidebarTitleContainer}>
@@ -119,33 +80,24 @@ export function Sidebar({ protos, onMethodSelected, onProtoUpload, onDeleteAll, 
         <div
           style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}
         >
-          <input
-            accept=".proto"
-            style={styles.input}
-            ref={fileInputRef}
-            type="file"
-            multiple
-            onChange={onChangeFileUpload}
-          />
-
           <Dropdown.Button
             type="primary"
             // onClick={() => {
             //   importProtos(onProtoUpload, importPaths)
             // }}
-            onClick={openFileUpload}
+            onClick={() => openFileUpload()}
             overlay={
               <Menu>
-                <Menu.Item key="1" onClick={openFileUpload}>
+                <Menu.Item key="1" onClick={() => openFileUpload()}>
                   <Icon type="file" />
                   Import from file
                 </Menu.Item>
-                <Menu.Item key="2" onClick={() => {
+                {/* <Menu.Item key="2" onClick={() => {
                   setImportReflectionVisible(true)
                 }}>
                   <Icon type="eye" />
                   Import from server reflection
-                </Menu.Item>
+                </Menu.Item> */}
               </Menu>
             }
           >
@@ -346,7 +298,4 @@ const styles: {
     alignContent: "space-between",
     borderBottom: "1px solid #e0e0e0",
   },
-  input: {
-    display: 'none'
-  }
 };

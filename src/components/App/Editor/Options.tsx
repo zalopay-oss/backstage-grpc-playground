@@ -87,7 +87,8 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
             <Icon type="caret-down" />
           </div>
         </Dropdown>
-        <div style={{paddingRight: 10}}>
+        {/* Hide GRPC-web */}
+        {/* <div style={{paddingRight: 10}}>
           <Switch
             checkedChildren="WEB &nbsp;"
             defaultChecked={grpcWebChecked}
@@ -96,7 +97,7 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
               dispatch(setGrpcWeb(checked));
             }}
           />
-        </div>
+        </div> */}
         <div style={{paddingRight: 10}}>
           <Switch
             checkedChildren="Interactive"

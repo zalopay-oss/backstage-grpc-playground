@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { ChannelCredentials, ChannelOptions, /* Client */ } from '@grpc/grpc-js';
 
 interface Serialize<T> {

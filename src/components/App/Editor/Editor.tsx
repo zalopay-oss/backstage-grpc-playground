@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
@@ -35,11 +34,12 @@ export interface EditorAction {
 }
 
 export interface EditorEnvironment {
-  name: string
-  url: string
-  metadata: string,
-  interactive: boolean
-  tlsCertificate: Certificate,
+  name: string;
+  url: string;
+  metadata: string;
+  isDefault?: boolean;
+  interactive: boolean;
+  tlsCertificate: Certificate;
 }
 
 export interface EditorRequest {
@@ -172,7 +172,7 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
   useEffect(() => {
     if (protoInfo && !initialRequest) {
       try {
-        const { plain } = protoInfo.service.methodsMocks[protoInfo.methodName]();
+        const { plain } = protoInfo.service.methodsMocks[protoInfo.methodName];
         dispatch(setData(JSON.stringify(plain, null, 2)));
       } catch (e) {
         // eslint-disable-next-line no-console

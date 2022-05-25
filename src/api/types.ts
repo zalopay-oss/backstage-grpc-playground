@@ -52,3 +52,43 @@ export interface CertFile {
 export interface EditorTabRequest extends EditorRequest {
   id: string
 }
+
+export interface GRPCTarget {
+  [envName: string]: GRPCTargetInfo;
+}
+
+export interface GRPCTargetInfo {
+  host?: string;
+  port?: number;
+}
+
+export interface MissingImportFile {
+  fileName: string;
+  filePath: string;
+}
+
+export interface RawPlaceholderFile {
+  file_name: string;
+  file_path: string;
+  is_preloaded?: boolean;
+  import_paths?: string[];
+  is_library?: boolean;
+  url?: string;
+}
+
+export interface EntitySpec {
+  type: string;
+  lifecycle: string;
+  owner: string;
+  definition: string; // stringified PlaceholderFile
+  files: RawPlaceholderFile[];
+  system?: string;
+  targets?: GRPCTarget;
+  imports?: RawPlaceholderFile[];
+}
+
+export enum LoadProtoStatus {
+  ok = 1,
+  fail = -1,
+  part = 0
+}
