@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Icon, Spin, Layout, notification, Modal, Button } from 'antd';
+import { Icon, Spin, Layout, notification, Modal, Button, List } from 'antd';
 import { fileOpen, directoryOpen } from 'browser-fs-access';
 import { v4 as uuidv4 } from 'uuid';
 import { useApi } from '@backstage/core-plugin-api';
@@ -83,8 +83,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   useEffect(() => {
     Store.setGlobalKey(appId);
     bloomRPCApi.setEntityName(appId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appId])
+  }, [appId, bloomRPCApi])
 
   useEffect(() => {
     // Preload editor with stored data.
@@ -190,37 +189,35 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   const handleProtoResult = (res: UploadProtoResponse) => {
     const onProtoUpload = handleProtoUpload(setProtos, protos);
 
+    isImport.current = undefined;
+
+    if (res.protos) {
+      if (missingImports.current.length) {
+        missingImports.current = missingImports.current.filter(current => {
+          return !res.protos!.find(resolved => resolved.proto.filePath === current.filePath)
+        })
+      }
+    }
+
     switch (res?.status) {
       case LoadProtoStatus.part: {
+        if (res.protos) {
+          onProtoUpload(res.protos);
+        }
+
         if (res.missingImports?.length) {
+          // Merge missing imports
           const map = new Map<string, MissingImportFile>();
+          const addToMap = (imp: MissingImportFile) => map.set(imp.filePath, imp);
 
-          res.missingImports!.forEach(imp => {
-            map.set(imp.filePath, imp);
-          });
-          missingImports.current.forEach(imp => {
-            map.set(imp.filePath, imp);
-          })
-
+          missingImports.current.concat(res.missingImports).forEach(addToMap);
           missingImports.current = Array.from(map.values());
-          handleMissingImport();
         }
         break;
       }
       case LoadProtoStatus.ok:
         if (res.protos) {
           onProtoUpload(res.protos);
-
-          if (missingImports.current.length) {
-            missingImports.current = missingImports.current.filter(current => {
-              return !res.protos!.find(resolved => resolved.proto.filePath === current.filePath)
-            })
-          }
-        }
-
-        if (missingImports.current.length) {
-          // still missing imports
-          handleMissingImport();
         }
         break;
 
@@ -228,6 +225,11 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
       case LoadProtoStatus.fail:
         onProtoUpload(protos, new Error(res.message || 'Unknown error'));
         break;
+    }
+
+    if (missingImports.current.length) {
+      // still missing imports
+      handleMissingImport();
     }
   }
 
@@ -273,7 +275,6 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
       fileMappings,
     });
 
-    isImport.current = undefined;
     handleProtoResult(res);
   }
 
@@ -285,6 +286,22 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   const onClickOpenDirectory = () => {
     toggleModalMissingImports();
     openFileUpload(true);
+  }
+
+  const onClickIgnore = () => {
+    missingImports.current = missingImports.current.filter(f => {
+      return f.filePath !== isImport.current?.filePath
+    });
+    isImport.current = undefined;
+
+    toggleModalMissingImports();
+
+    if (missingImports.current.length) {
+      // 100ms is for current modalMissingImport to finish its closing animation
+      setTimeout(() => {
+        handleMissingImport();
+      }, 100);
+    }
   }
 
   return (
@@ -365,21 +382,37 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
             <Modal
               footer={[
-                <Button key="open-file" type="primary" onClick={onClickOpenFile}>
+                <Button key="open-file" icon='file-add' type="primary" onClick={onClickOpenFile}>
                   Import file
                 </Button>,
-                <Button key="open-directory" type="default" onClick={onClickOpenDirectory}>
+                <Button key="open-directory" icon='folder-add' type="primary" onClick={onClickOpenDirectory}>
                   Import directory
                 </Button>,
-                <Button key="back" onClick={toggleModalMissingImports}>
-                  Return
+                <Button key="back" type="danger" icon='stop' onClick={onClickIgnore}>
+                  Ignore
                 </Button>,
               ]}
               title="Missing dependencies"
               destroyOnClose
+              onCancel={onClickIgnore}
               visible={modalMissingImportsOpen}
             >
-              Add imports for <strong>{isImport.current?.fileName}</strong>?
+              {isImport.current ? (
+                <>
+                  <strong>{isImport.current.filePath}</strong> is missing these files
+                  <List
+                    bordered={false}
+                    dataSource={isImport.current?.importPaths}
+                    renderItem={item => (
+                      <List.Item>
+                        <Icon type='file' style={{ marginRight: 10 }} />
+                        {item}
+                      </List.Item>
+                    )}
+                  />
+                </>
+              ) : null}
+
             </Modal>
           </Layout.Content>
         </Layout>

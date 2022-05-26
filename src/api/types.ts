@@ -44,10 +44,12 @@ export interface Certificate {
   useServerCertificate?: boolean;
 }
 
-export interface CertFile {
+export interface BaseFile {
   fileName: string;
   filePath: string;
 }
+
+export interface CertFile extends BaseFile { }
 
 export interface EditorTabRequest extends EditorRequest {
   id: string
@@ -62,9 +64,8 @@ export interface GRPCTargetInfo {
   port?: number;
 }
 
-export interface MissingImportFile {
-  fileName: string;
-  filePath: string;
+export interface MissingImportFile extends BaseFile {
+  importPaths?: string[];
 }
 
 export interface RawPlaceholderFile {
