@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-shadow */
-/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-param-reassign */
 // eslint-disable-next-line no-restricted-imports
 import EventEmitter from "events";
@@ -13,7 +12,7 @@ import {
   MethodDescriptor,
   MethodType,
 } from 'grpc-web';
-import { SendRequestPayload, SendRequestStreamPayload, SendServerRequest, SendServerRequestStream } from "./BloomRPCApi";
+import { SendRequestPayload, SendServerRequest } from "./BloomRPCApi";
 import { v4 as uuid } from 'uuid';
 import { fetchEventSource, FetchEventSourceInit, EventStreamContentType } from '@microsoft/fetch-event-source';
 
@@ -35,7 +34,8 @@ export interface GRPCServerRequestInfo {
   inputs: string;
   interactive?: boolean;
   tlsCertificate?: Certificate;
-  sendServerRequest: SendServerRequest | SendServerRequestStream;
+  // sendServerRequest: SendServerRequest | SendServerRequestStream;
+  sendServerRequest: SendServerRequest;
 }
 
 export interface ResponseMetaInformation {
@@ -67,11 +67,9 @@ export class GRPCServerRequest extends EventEmitter {
   inputs: string;
   interactive?: boolean;
   tlsCertificate?: Certificate;
-  _stream?: ReadableStream;
-  _call?: ReadableStreamController<any>;
-  _ctrl: AbortController;
-  _sendServerRequest: SendServerRequest | SendServerRequestStream;
-  _doCall?: () => Promise<void>;
+  private ctrl: AbortController;
+  private sendServerRequest: SendServerRequest;
+  private doCall?: () => Promise<void>;
   requestData: any = {};
 
   constructor({
@@ -90,18 +88,8 @@ export class GRPCServerRequest extends EventEmitter {
     this.inputs = inputs;
     this.interactive = interactive;
     this.tlsCertificate = tlsCertificate;
-    this._call = undefined;
-    this._sendServerRequest = sendServerRequest;
-    this._ctrl = new AbortController();
-
-    const methodDef = this.protoInfo.methodDef();
-    if (methodDef.requestStream) {
-      this._stream = new ReadableStream({
-        start: async (controller) => {
-          this._call = controller;
-        },
-      }).pipeThrough(new TextEncoderStream());
-    }
+    this.sendServerRequest = sendServerRequest;
+    this.ctrl = new AbortController();
   }
 
   send(): GRPCServerRequest {
@@ -109,45 +97,33 @@ export class GRPCServerRequest extends EventEmitter {
 
       // TODO call backend plugin
 
-      let payload: any;
-
-      const methodDef = this.protoInfo.methodDef();
-
       // eslint-disable-next-line no-constant-condition
-      if (false && methodDef.requestStream) {
-        payload = {
-          stream: this._stream!,
-          requestId: uuid(),
-          url: this.url,
-          interactive: this.interactive,
-          methodName: this.protoInfo.methodName,
-          serviceName: this.protoInfo.service.serviceName,
-          proto: this.protoInfo.service.proto.protoText,
-        }
-      } else {
-        const reqInfo = this.parseRequestInfo(this.inputs, this.metadata);
-        this.requestData = reqInfo;
-      }
+      const reqInfo = this.parseRequestInfo(this.inputs, this.metadata);
+      this.requestData = reqInfo;
+      const methodDef = this.protoInfo.methodDef();
 
       const doCall = () => {
         console.log('OUTPUT ~ GRPCServerRequest ~ doCall ~ this.requestData', this.requestData);
 
-        const payload = {
+        const payload: SendRequestPayload = {
           requestData: this.requestData,
           requestId: uuid(),
           url: this.url,
           interactive: this.interactive,
           methodName: this.protoInfo.methodName,
           serviceName: this.protoInfo.service.serviceName,
-          proto: this.protoInfo.service.proto.protoText,
+          importPaths: this.protoInfo.service.proto.importPaths,
+          proto: this.protoInfo.service.proto.filePath,
+          // proto: this.protoInfo.service.proto.protoText,
         };
 
         let fetcher: any;
         let fetchOptions: Partial<RequestInit> = {
-          signal: this._ctrl.signal,
+          signal: this.ctrl.signal,
         };
 
         if (methodDef.responseStream || methodDef.requestStream) {
+          // Stream request with fetch-event-source
           fetcher = fetchEventSource;
 
           fetchOptions = {
@@ -181,7 +157,7 @@ export class GRPCServerRequest extends EventEmitter {
               console.log('OUTPUT ~ GRPCServerRequest ~ doCall ~ onerror ~ err', err);
               this.emit(GRPCEventType.ERROR, err, {});
 
-              this._ctrl.abort();
+              this.ctrl.abort();
 
               this.emit(GRPCEventType.END);
               throw err;
@@ -189,60 +165,38 @@ export class GRPCServerRequest extends EventEmitter {
           } as FetchEventSourceInit;
         }
 
-        return this._sendServerRequest(payload as any, {
+        return this.sendServerRequest(payload, {
           fetcher,
           fetchOptions,
         })
           .then(async (res) => {
             if (!res) return;
 
-            const reader = res.body?.pipeThrough(new TextDecoderStream()).getReader();
-            if (!reader) {
-              // not stream
-              try {
-                const { error, data, metaInfo } = await res.json();
-                console.log('OUTPUT ~ GRPCServerRequest ~ .then ~ data', data);
+            try {
+              // Unary
+              const { error, data, metaInfo } = await res.json();
 
-                if (error) {
-                  const errorThrow = new Error(error.details);
+              if (error) {
+                const errorThrow = new Error(error.details);
 
-                  this.emit(GRPCEventType.ERROR, errorThrow, metaInfo);
-                }
-
-                if (data) {
-                  this.emit(GRPCEventType.DATA, data, metaInfo);
-                }
-              } catch (err) {
-                console.log('err', err);
+                this.emit(GRPCEventType.ERROR, errorThrow, metaInfo);
               }
 
-              this.emit(GRPCEventType.END);
-              return;
-            };
-
-            // eslint-disable-next-line no-constant-condition
-            while (true) {
-              // read eventstream
-              const { value, done } = await reader.read();
-              if (done) break;
-
-              const values = value.split('\n');
-              values.forEach((val) => {
-                if (val.startsWith('data: ')) {
-                  const { data, metaInfo } = JSON.parse(val.split('data: ')[1]);
-                  this.emit(GRPCEventType.DATA, data, metaInfo);
-                }
-              });
+              if (data) {
+                this.emit(GRPCEventType.DATA, data, metaInfo);
+              }
+            } catch (err) {
+              console.log('err', err);
             }
-
-            this.emit(GRPCEventType.END);
           }).catch(e => {
             this.emit(GRPCEventType.ERROR, e, {});
+          }).finally(() => {
+            this.emit(GRPCEventType.END);
           })
       }
 
       if (methodDef.requestStream && this.interactive) {
-        this._doCall = doCall;
+        this.doCall = doCall;
 
         return this;
       }
@@ -260,21 +214,6 @@ export class GRPCServerRequest extends EventEmitter {
    * @param data
    */
   write(data: string) {
-    if (this._call) {
-      // Add metadata
-      let inputs = {};
-
-      try {
-        const reqInfo = this.parseRequestInfo(data);
-        inputs = reqInfo.inputs;
-      } catch (e) {
-        return this;
-      }
-      // this._call.write(inputs);
-
-      this._call.enqueue(inputs);
-    }
-
     if (!this.requestData.inputs.stream) {
       this.requestData.inputs = {
         stream: [
@@ -292,14 +231,9 @@ export class GRPCServerRequest extends EventEmitter {
    * Cancel request
    */
   cancel() {
-    if (this._call) {
-      // this._call.cancel();
-      this._call.close();
-    }
-
-    if (this._ctrl) {
+    if (this.ctrl) {
       console.log('aborting request');
-      this._ctrl?.abort?.();
+      this.ctrl?.abort?.();
     }
 
     this.emit(GRPCEventType.END);
@@ -309,11 +243,7 @@ export class GRPCServerRequest extends EventEmitter {
    * Commit stream
    */
   commitStream() {
-    if (this._call) {
-      this._call.close();
-    }
-
-    this._doCall?.();
+    this.doCall?.();
   }
 
   /**

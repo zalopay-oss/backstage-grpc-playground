@@ -1,14 +1,18 @@
-/* eslint-disable consistent-return */
+/* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Layout, notification } from 'antd';
+import { Icon, Spin, Layout, notification, Modal, Button, List } from 'antd';
+import { fileOpen, directoryOpen } from 'browser-fs-access';
+import { v4 as uuidv4 } from 'uuid';
+import { useApi } from '@backstage/core-plugin-api';
+import { useEntity } from '@backstage/plugin-catalog-react';
+
 import { Sidebar } from './Sidebar';
 import { TabData, TabList } from './TabList';
 import {
   EditorTabsStorage,
   deleteRequestInfo,
-  getImportPaths,
   getProtos,
   getRequestInfo,
   getTabs,
@@ -17,29 +21,52 @@ import {
   storeTabs,
 } from '../../storage';
 import { EditorEnvironment } from "./Editor";
-import { getEnvironments } from "../../storage/environments";
-import { v4 as uuidv4 } from 'uuid';
-import { loadProtos, OnProtoUpload, ProtoFile, ProtoService, SavedProto } from '../../api';
+import { getEnvironments as getEnvFromStorage, saveEnvironments } from "../../storage/environments";
+
+import {
+  bloomRPCApiRef,
+  EntitySpec,
+  GRPCTargetInfo,
+  loadProtos,
+  ProtoFile,
+  ProtoService,
+  SavedProto,
+  RawPlaceholderFile,
+  LoadProtoStatus,
+  OnProtoUpload,
+  UploadProtoResponse,
+  MissingImportFile,
+  EditorTabs
+} from '../../api';
 import { arrayMoveImmutable as arrayMove } from '../../utils'
-import './app.css';
 import { Store } from '../../storage/Store';
 
-export interface EditorTabs {
-  activeKey: string
-  tabs: TabData[]
+import './app.css';
+
+function combineTargetToUrl(target: GRPCTargetInfo): string {
+  return `${target.host}:${target.port}`;
 }
 
-interface AppProps {
-  definition?: string;
-  appId?: string;
+interface BloomRPCApplicationProps {
+  appId: string;
+  spec?: EntitySpec;
 }
 
-export function App({ definition, appId = 'global' }: AppProps) {
+const DEFAULT_APP_ID = 'standalone';
+
+const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }) => {
+  const [isLoading, setLoading] = useState(false);
   const [protos, setProtosState] = useState<ProtoFile[]>([]);
   const [editorTabs, setEditorTabs] = useState<EditorTabs>({
     activeKey: "0",
     tabs: [],
   });
+  const [modalMissingImportsOpen, setModalMissingImportsOpen] = useState(false);
+
+  const isImport = React.useRef<MissingImportFile | undefined>();
+  const missingImports = React.useRef<MissingImportFile[]>([]);
+
+  const bloomRPCApi = useApi(bloomRPCApiRef);
 
   const [environments, setEnvironments] = useState<EditorEnvironment[]>(getEnvironments());
 
@@ -55,109 +82,369 @@ export function App({ definition, appId = 'global' }: AppProps) {
 
   useEffect(() => {
     Store.setGlobalKey(appId);
-  }, [appId])
+    bloomRPCApi.setEntityName(appId);
+  }, [appId, bloomRPCApi])
 
-  // Preload editor with stored data.
   useEffect(() => {
-    const defaultProto = definition ? {
-      fileName: 'api.proto',
-      protoText: definition,
-    } : undefined;
-
-    console.log('defaultProto?.fileName', defaultProto?.fileName);
-
-    hydrateEditor(setProtos, setTabs, defaultProto);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Preload editor with stored data.
+    hydrateEditor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
+  function getEnvironments(): EditorEnvironment[] {
+    const fromStorage = getEnvFromStorage();
 
-  }, [definition])
+    if (spec?.targets && !fromStorage?.length) {
+      const fromSpec = Object.keys(spec.targets).map(name => {
+        return {
+          name,
+          url: combineTargetToUrl(spec.targets![name]),
+          isDefault: true,
+          metadata: '',
+          interactive: false,
+          tlsCertificate: null as any
+        }
+      });
+
+      saveEnvironments(fromSpec);
+      return fromSpec;
+    }
+
+    return fromStorage;
+  }
+
+  /**
+   * Hydrate editor from persisted storage
+   */
+  async function hydrateEditor() {
+    setLoading(true);
+    const entitySpec = { ...(spec || {}) } as EntitySpec;
+
+    const savedProtos = getProtos();
+
+    if (savedProtos.length) {
+      // ent itySpec.definition
+      const processProtos: RawPlaceholderFile[] = savedProtos.map(p => ({
+        file_name: p.fileName,
+        file_path: p.filePath,
+        is_preloaded: true,
+        import_paths: p.importPaths,
+      }));
+
+      const fromSpec = spec?.files || [];
+
+      // unique protofiles
+      [fromSpec].flat().forEach((proto: RawPlaceholderFile) => {
+        if (!proto) return;
+
+        // check if saved
+        const index = processProtos.findIndex(({ file_path }) => file_path === proto.file_path);
+        if (index > -1) {
+          processProtos[index] = {
+            ...processProtos[index],
+            url: proto.url,
+          }
+        } else {
+          processProtos.push(proto);
+        }
+      });
+
+      entitySpec.files = processProtos;
+    }
+
+    entitySpec.files = entitySpec.files || [];
+
+    bloomRPCApi.getProto({ entitySpec })
+      .then(res => {
+        handleProtoResult(res);
+
+        const savedEditorTabs = getTabs();
+        if (savedEditorTabs) {
+          try {
+            const tabs = loadTabs(savedEditorTabs, res.protos || protos);
+
+            setEditorTabs(tabs as EditorTabs);
+          } catch (err) {
+            setEditorTabs({ activeKey: "0", tabs: [] })
+          }
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
+
+  function handleMissingImport() {
+    const [missingFor] = missingImports.current || [];
+    if (!missingFor) return;
+    isImport.current = missingFor;
+
+    toggleModalMissingImports();
+  }
+
+  const toggleModalMissingImports = () => {
+    setModalMissingImportsOpen(o => !o);
+  }
+
+  const handleProtoResult = (res: UploadProtoResponse) => {
+    const onProtoUpload = handleProtoUpload(setProtos, protos);
+
+    isImport.current = undefined;
+
+    if (res.protos) {
+      if (missingImports.current.length) {
+        missingImports.current = missingImports.current.filter(current => {
+          return !res.protos!.find(resolved => resolved.proto.filePath === current.filePath)
+        })
+      }
+    }
+
+    switch (res?.status) {
+      case LoadProtoStatus.part: {
+        if (res.protos) {
+          onProtoUpload(res.protos);
+        }
+
+        if (res.missingImports?.length) {
+          // Merge missing imports
+          const map = new Map<string, MissingImportFile>();
+          const addToMap = (imp: MissingImportFile) => map.set(imp.filePath, imp);
+
+          missingImports.current.concat(res.missingImports).forEach(addToMap);
+          missingImports.current = Array.from(map.values());
+        }
+        break;
+      }
+      case LoadProtoStatus.ok:
+        if (res.protos) {
+          onProtoUpload(res.protos);
+        }
+        break;
+
+      default:
+      case LoadProtoStatus.fail:
+        onProtoUpload(protos, new Error(res.message || 'Unknown error'));
+        break;
+    }
+
+    if (missingImports.current.length) {
+      // still missing imports
+      handleMissingImport();
+    }
+  }
+
+  const openFileUpload = async (directory?: boolean) => {
+    let choosenFiles;
+
+    try {
+      choosenFiles = !directory
+        ? await fileOpen({
+          multiple: true,
+          id: 'protos',
+          extensions: ['.proto'],
+        })
+        : await directoryOpen({
+          recursive: true,
+          id: 'proto-directory',
+        });
+    } catch (err) {
+      // User closed file chooser
+    }
+
+    if (!choosenFiles) return;
+
+    let fileMappings: Record<string, string> | undefined;
+
+    // filter only proto files
+    const uploadFiles = !directory
+      ? choosenFiles
+      : choosenFiles.filter(file => {
+        return file.name.endsWith('.proto');
+      });
+
+    if (directory) {
+      fileMappings = {};
+      uploadFiles.forEach(file => {
+        fileMappings![file.name] = file.webkitRelativePath;
+      });
+    }
+
+    const res: UploadProtoResponse = await bloomRPCApi.uploadProto({
+      files: uploadFiles,
+      isImport: isImport.current,
+      fileMappings,
+    });
+
+    handleProtoResult(res);
+  }
+
+  const onClickOpenFile = () => {
+    toggleModalMissingImports();
+    openFileUpload();
+  }
+
+  const onClickOpenDirectory = () => {
+    toggleModalMissingImports();
+    openFileUpload(true);
+  }
+
+  const onClickIgnore = () => {
+    missingImports.current = missingImports.current.filter(f => {
+      return f.filePath !== isImport.current?.filePath
+    });
+    isImport.current = undefined;
+
+    toggleModalMissingImports();
+
+    if (missingImports.current.length) {
+      // 100ms is for current modalMissingImport to finish its closing animation
+      setTimeout(() => {
+        handleMissingImport();
+      }, 100);
+    }
+  }
 
   return (
-    <Layout style={styles.layout}>
-      <Layout>
-        <Layout.Sider style={styles.sider} width={300}>
-          <Sidebar
-            protos={protos}
-            onProtoUpload={handleProtoUpload(setProtos, protos)}
-            onReload={() => {
-              hydrateEditor(setProtos, setEditorTabs);
-            }}
-            onMethodSelected={handleMethodSelected(editorTabs, setTabs)}
-            onDeleteAll={() => {
-              setProtos([]);
-            }}
-            onMethodDoubleClick={handleMethodDoubleClick(editorTabs, setTabs)}
-          />
-        </Layout.Sider>
+    <Spin spinning={isLoading} indicator={<Icon type="loading" style={{ fontSize: 24 }} />}>
+      <Layout style={styles.layout}>
+        <Layout>
+          <Layout.Sider style={styles.sider} width={300}>
+            <Sidebar
+              protos={protos}
+              openFileUpload={openFileUpload}
+              onProtoUpload={handleProtoUpload(setProtos, protos)}
+              onReload={hydrateEditor}
+              onMethodSelected={handleMethodSelected(editorTabs, setTabs)}
+              onDeleteAll={() => {
+                setProtos([]);
+              }}
+              onMethodDoubleClick={handleMethodDoubleClick(editorTabs, setTabs)}
+            />
+          </Layout.Sider>
 
-        <Layout.Content>
-          <TabList
-            tabs={editorTabs.tabs || []}
-            onDragEnd={({ oldIndex, newIndex }) => {
-              const newTab = editorTabs.tabs[oldIndex];
+          <Layout.Content>
+            <TabList
+              tabs={editorTabs.tabs || []}
+              onDragEnd={({ oldIndex, newIndex }) => {
+                const newTab = editorTabs.tabs[oldIndex];
 
-              setTabs({
-                activeKey: newTab && newTab.tabKey || editorTabs.activeKey,
-                tabs: arrayMove(
-                  editorTabs.tabs,
-                  oldIndex,
-                  newIndex,
-                ).filter(e => e),
-              })
-            }}
-            activeKey={editorTabs.activeKey}
-            environmentList={environments}
-            onEnvironmentChange={() => {
-              setEnvironments(getEnvironments());
-            }}
-            onEditorRequestChange={(editorRequestInfo) => {
-              storeRequestInfo(editorRequestInfo);
-            }}
-            onDelete={(activeKey: string | React.MouseEvent<HTMLElement>) => {
-              let newActiveKey = "0";
+                setTabs({
+                  activeKey: newTab && newTab.tabKey || editorTabs.activeKey,
+                  tabs: arrayMove(
+                    editorTabs.tabs,
+                    oldIndex,
+                    newIndex,
+                  ).filter(e => e),
+                })
+              }}
+              activeKey={editorTabs.activeKey}
+              environmentList={environments}
+              onEnvironmentChange={() => {
+                setEnvironments(getEnvironments());
+              }}
+              onEditorRequestChange={(editorRequestInfo) => {
+                storeRequestInfo(editorRequestInfo);
+              }}
+              onDelete={(activeKey: string | React.MouseEvent<HTMLElement>) => {
+                let newActiveKey = "0";
 
-              const index = editorTabs.tabs
-                .findIndex(tab => tab.tabKey === activeKey);
+                const index = editorTabs.tabs
+                  .findIndex(tab => tab.tabKey === activeKey);
 
-              if (index === -1) {
-                return;
-              }
-
-              if (editorTabs.tabs.length > 1) {
-                if (activeKey === editorTabs.activeKey) {
-                  const newTab = editorTabs.tabs[index - 1] || editorTabs.tabs[index + 1];
-                  newActiveKey = newTab.tabKey;
-                } else {
-                  newActiveKey = editorTabs.activeKey;
+                if (index === -1) {
+                  return;
                 }
-              }
 
-              deleteRequestInfo(activeKey as string);
+                if (editorTabs.tabs.length > 1) {
+                  if (activeKey === editorTabs.activeKey) {
+                    const newTab = editorTabs.tabs[index - 1] || editorTabs.tabs[index + 1];
+                    newActiveKey = newTab.tabKey;
+                  } else {
+                    newActiveKey = editorTabs.activeKey;
+                  }
+                }
 
-              setTabs({
-                activeKey: newActiveKey,
-                tabs: editorTabs.tabs.filter(tab => tab.tabKey !== activeKey),
-              });
+                deleteRequestInfo(activeKey as string);
 
-            }}
-            onChange={(activeKey: string) => {
-              setTabs({
-                activeKey,
-                tabs: editorTabs.tabs || [],
-              })
-            }}
-          />
-        </Layout.Content>
+                setTabs({
+                  activeKey: newActiveKey,
+                  tabs: editorTabs.tabs.filter(tab => tab.tabKey !== activeKey),
+                });
+
+              }}
+              onChange={(activeKey: string) => {
+                setTabs({
+                  activeKey,
+                  tabs: editorTabs.tabs || [],
+                })
+              }}
+            />
+
+            <Modal
+              footer={[
+                <Button key="open-file" icon='file-add' type="primary" onClick={onClickOpenFile}>
+                  Import file
+                </Button>,
+                <Button key="open-directory" icon='folder-add' type="primary" onClick={onClickOpenDirectory}>
+                  Import directory
+                </Button>,
+                <Button key="back" type="danger" icon='stop' onClick={onClickIgnore}>
+                  Ignore
+                </Button>,
+              ]}
+              title="Missing dependencies"
+              destroyOnClose
+              onCancel={onClickIgnore}
+              visible={modalMissingImportsOpen}
+            >
+              {isImport.current ? (
+                <>
+                  <strong>{isImport.current.filePath}</strong> is missing these files
+                  <List
+                    bordered={false}
+                    dataSource={isImport.current?.importPaths}
+                    renderItem={item => (
+                      <List.Item>
+                        <Icon type='file' style={{ marginRight: 10 }} />
+                        {item}
+                      </List.Item>
+                    )}
+                  />
+                </>
+              ) : null}
+
+            </Modal>
+          </Layout.Content>
+        </Layout>
+
       </Layout>
-
-    </Layout>
+    </Spin>
   );
+}
+
+export function StandaloneApp() {
+  return (
+    <BloomRPCApplication
+      appId={DEFAULT_APP_ID}
+    />
+  )
+}
+
+export function App() {
+  const { entity } = useEntity();
+
+  return (
+    <BloomRPCApplication
+      appId={entity?.metadata?.name || DEFAULT_APP_ID}
+      spec={entity?.spec as EntitySpec | undefined}
+    />
+  )
 }
 
 /**
  * Hydrate editor from persisted storage
+ * @deprecated - we now get protos from BE plugin with API
+ * 
  * @param setProtos
  * @param setEditorTabs
  */
@@ -226,7 +513,7 @@ function loadTabs(editorTabs: EditorTabsStorage, loadedProtos?: ProtoFile[]): Ed
  * @param setProtos
  * @param protos
  */
-function handleProtoUpload(setProtos: React.Dispatch<ProtoFile[]>, protos: ProtoFile[]) {
+function handleProtoUpload(setProtos: React.Dispatch<ProtoFile[]>, protos: ProtoFile[]): OnProtoUpload {
   return function (newProtos: ProtoFile[], err: Error | void) {
     if (err) {
       notification.error({
@@ -239,8 +526,6 @@ function handleProtoUpload(setProtos: React.Dispatch<ProtoFile[]>, protos: Proto
           wordBreak: "break-all",
         }
       });
-      setProtos([]);
-      return;
     }
 
     const protoMinusExisting = protos.filter((proto) => {
@@ -262,7 +547,7 @@ function handleProtoUpload(setProtos: React.Dispatch<ProtoFile[]>, protos: Proto
 function handleMethodSelected(editorTabs: EditorTabs, setTabs: React.Dispatch<EditorTabs>) {
   return (methodName: string, protoService: ProtoService) => {
     const tab = {
-      tabKey: `${protoService.serviceName}${methodName}`,
+      tabKey: `${protoService.proto.filePath}${protoService.serviceName}${methodName}`,
       methodName,
       service: protoService
     };

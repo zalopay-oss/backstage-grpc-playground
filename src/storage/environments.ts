@@ -11,6 +11,10 @@ const KEYS = {
   ENVIRONMENTS: "ENVIRONMENTS",
 };
 
+export function saveEnvironments(environments: EditorEnvironment[]) {
+  EnvironmentStore.set(KEYS.ENVIRONMENTS, environments);
+}
+
 export function saveEnvironment(environment: EditorEnvironment) {
   const environments: EditorEnvironment[] = EnvironmentStore.get(KEYS.ENVIRONMENTS) || [];
 

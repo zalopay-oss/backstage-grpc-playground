@@ -49,6 +49,10 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
     }
   }, [confirmedDelete]);
 
+  const currentEnv = React.useMemo(() => {
+    return (environments || []).find(env => env.name === currentEnvironmentName)
+  }, [environments, currentEnvironmentName]);
+
   return (
       <>
         <Input.Group compact>
@@ -132,12 +136,12 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
             ))}
 
             {currentEnvironmentName &&
-              <Select.Option value="update">
+              <Select.Option value="update" disabled={currentEnv?.isDefault}>
                   <Icon type="edit" /> Update Environment
               </Select.Option>
             }
             {currentEnvironmentName &&
-            <Select.Option value="delete">
+            <Select.Option value="delete" disabled={currentEnv?.isDefault}>
                 <Icon type="delete" /> Delete Environment
             </Select.Option>
             }

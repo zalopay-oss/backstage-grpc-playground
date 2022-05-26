@@ -13,10 +13,10 @@ import {
   addResponseStreamData, setStreamCommitted
 } from './actions';
 import { ControlsStateProps } from './Controls';
-import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, bloomRPCApiRef, SendServerRequest, SendServerRequestStream } from '../../../api';
+import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, bloomRPCApiRef, SendServerRequest } from '../../../api';
 import { useApi } from '@backstage/core-plugin-api';
 
-export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest }: ControlsStateProps & { sendServerRequest: SendServerRequest | SendServerRequestStream }) => {
+export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest }: ControlsStateProps & { sendServerRequest: SendServerRequest }) => {
   // Do nothing if not set
   if (!protoInfo) {
     return;
@@ -35,12 +35,12 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest }: C
 
   // TODO: handle server request
   // eslint-disable-next-line no-constant-condition
-  if (state.grpcWeb) {
+  if (false && state.grpcWeb) {
     grpcRequest = new GRPCWebRequest({
       url: state.url,
       inputs: state.data,
       metadata: state.metadata,
-      protoInfo,
+      protoInfo: protoInfo!,
       interactive: state.interactive,
       tlsCertificate: state.tlsCertificate,
     })
@@ -79,7 +79,6 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest }: C
   });
 
   grpcRequest.on(GRPCEventType.DATA, (data: object, metaInfo: ResponseMetaInformation) => {
-    console.log('OUTPUT ~ grpcRequest.on data ~ data', data, 'metaInfo', metaInfo);
     if (metaInfo.stream && state.interactive) {
       dispatch(addResponseStreamData({
         output: JSON.stringify(data, null, 2),

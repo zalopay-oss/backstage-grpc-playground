@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { configApiRef, createApiFactory, createComponentExtension, createPlugin, createRoutableExtension, discoveryApiRef, identityApiRef } from '@backstage/core-plugin-api';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { scmAuthApiRef } from '@backstage/integration-react';
 import { bloomRPCApiRef, BloomRPCApiClient } from './api';
 
@@ -54,7 +53,7 @@ export const BloomrpcPage = bloomrpcPlugin.provide(
   createRoutableExtension({
     name: 'BloomRPC Plugin',
     component: () =>
-      import('./components/App').then(m => m.App),
+      import('./components/App').then(m => m.StandaloneApp),
     mountPoint: rootRouteRef,
   }),
 );

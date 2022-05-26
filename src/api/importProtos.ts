@@ -1,14 +1,11 @@
-/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-console */
 import { parse, Service } from 'protobufjs';
 import { fromJSON } from '@grpc/proto-loader';
 import { v4 as uuid } from 'uuid';
 
-import { Proto, ProtoFile, ProtoService as ProtoServiceClient, SavedProto } from './protobuf';
+import { OnProtoUpload, Proto, ProtoFile, ProtoService as ProtoServiceClient, SavedProto } from './protobuf';
 import { mockRequestMethods, walkServices } from './bloomrpc-mock';
 import { loadPackageDefinition } from './makeClient';
-
-export type OnProtoUpload = (protoFiles: ProtoFile[], err?: Error) => void
 
 export interface FileWithContent extends Pick<File, 'name' | 'type' | 'size' | 'lastModified' | 'webkitRelativePath'> {
   content?: string;
@@ -16,6 +13,8 @@ export interface FileWithContent extends Pick<File, 'name' | 'type' | 'size' | '
 
 /**
  * Upload protofiles
+ * // TODO: Not implemented
+ * 
  * @param onProtoUploaded
  * @param importPaths
  */
@@ -30,6 +29,7 @@ export async function importProtos(onProtoUploaded: OnProtoUpload, importPaths?:
 
 /**
  * Upload protofiles from gRPC server reflection
+ * 
  * @param onProtoUploaded
  * @param host
  */
@@ -39,6 +39,8 @@ export async function importProtosFromServerReflection(onProtoUploaded: OnProtoU
 
 /**
  * Load protocol buffer files
+ * @deprecated
+ * 
  * @param filePaths
  * @param importPaths
  * @param onProtoUploaded
@@ -165,7 +167,7 @@ export async function readMultifiles(files: FileList): Promise<FileWithContent[]
 export function loadProtosFromSavedProtos(savedProtos: SavedProto[], onProtoUploaded?: OnProtoUpload): ProtoFile[] {
   try {
     const protoList = savedProtos.reduce((list: ProtoFile[], savedFile) => {
-      const proto = createProtoFromProtoText(savedFile.protoText, savedFile.fileName);
+      const proto = createProtoFromProtoText(savedFile.protoText!, savedFile.fileName);
 
       const services = parseServices(proto);
 
@@ -232,6 +234,8 @@ export function loadProtosFromProtoTexts(protoTexts: string[], onProtoUploaded?:
 
 /**
  * Load protocol buffer files from gRPC server reflection
+ * // TODO: Not implemented
+ * 
  * @param host
  * @param onProtoUploaded
  */
@@ -239,20 +243,11 @@ export async function loadProtoFromReflection(host: string, onProtoUploaded?: On
   return [];
 }
 
+/**
+ * // TODO: Not implemented
+ */
 export function importResolvePath(): Promise<string | null> {
   return new Promise(async (resolve, reject) => {
-    // const openDialogResult = await remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
-    //   properties: ['openDirectory'],
-    //   filters: []
-    // });
-
-    // const filePaths = openDialogResult.filePaths;
-
-    // if (!filePaths) {
-    //   return reject("No folder selected");
-    // }
-    // resolve(filePaths[0]);
-
     resolve(null);
   });
 }
@@ -270,6 +265,7 @@ function parseServices(proto: Proto) {
     services[serviceName] = {
       serviceName,
       proto,
+      definition: proto.root.lookupService(serviceName),
       methodsMocks: mocks,
       methodsName: Object.keys(mocks),
     };

@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { v4 as uuid } from 'uuid';
-import { get } from 'lodash';
+import get from 'lodash.get';
 
 import {
   Enum,
@@ -18,12 +18,12 @@ import {
 import { Proto } from './protobuf';
 
 export interface MethodPayload {
-  plain: {[key: string]: any};
+  plain: { [key: string]: any };
   message: Message;
 }
 
 export type ServiceMethodsPayload = {
-  [name: string]: () => MethodPayload
+  [name: string]: MethodPayload
 };
 
 const enum MethodType {
@@ -37,7 +37,7 @@ const MAX_STACK_SIZE = 3;
 /**
  * Walk through services
  */
- export function walkServices(proto: Proto, onService: (service: Service, def: any, serviceName: string) => void) {
+export function walkServices(proto: Proto, onService: (service: Service, def: any, serviceName: string) => void) {
   const { ast, root } = proto;
 
   walkNamespace(root, namespace => {
@@ -116,75 +116,6 @@ function isNamespace(lookupType: ReflectionObject) {
 }
 
 /**
- * Mock a service
- */
-export function mockServiceMethods(
-  service: Service,
-  mocks?: void | {},
-): any {
-  const mockedMethodsPayloads = mockResponseMethods(service, mocks);
-
-  return Object.keys(mockedMethodsPayloads).reduce((methods: any, method: string) => {
-    methods[method] = (call: any, callback: any) => {
-      const getMockPayload = mockedMethodsPayloads[method];
-
-      // Client side streaming
-      if (service.methods[method].requestStream) {
-        call.on('data', (data: any) => {
-          console.log('Received data: ', data);
-        });
-
-        call.on('end', () => {
-          const {message} = getMockPayload();
-          if (!service.methods[method].responseStream) {
-            callback(null, message);
-          }
-        });
-
-        if (!service.methods[method].responseStream) {
-          return;
-        }
-      }
-
-      // Server side streaming
-      if (service.methods[method].responseStream) {
-        const pushInterval = setInterval(function () {
-          const getMockPayload = mockedMethodsPayloads[method];
-          const {message} = getMockPayload();
-          call.write(message);
-        }, 1000);
-
-        setTimeout(function () {
-          clearInterval(pushInterval);
-          call.end();
-        }, 10000);
-
-        return;
-      }
-
-      const {message} = getMockPayload();
-      callback(null, message);
-    };
-
-    return methods;
-  }, {});
-}
-
-/**
- * Mock method response
- */
-export function mockResponseMethods(
-  service: Service,
-  mocks?: void | {},
-) {
-  return mockMethodReturnType(
-    service,
-    MethodType.response,
-    mocks
-  );
-}
-
-/**
  * Mock methods request
  */
 export function mockRequestMethods(
@@ -215,12 +146,14 @@ function mockMethodReturnType(
 
     const messageType = root.lookupType(methodMessageType);
 
-    methods[method] = () => {
-      let data = {};
-      if (!mocks) {
-        data = mockTypeFields(messageType);
-      }
-      return {plain: data, message: messageType.fromObject(data)};
+    let data = {};
+    if (!mocks) {
+      data = mockTypeFields(messageType);
+    }
+
+    methods[method] = {
+      plain: data,
+      message: messageType.fromObject(data)
     };
 
     return methods;
@@ -319,7 +252,7 @@ function mockField(field: Field, stackDepth?: StackDepth): any {
 }
 
 function pickOneOf(oneofs: OneOf[]) {
-  return oneofs.reduce((fields: {[key: string]: any}, oneOf) => {
+  return oneofs.reduce((fields: { [key: string]: any }, oneOf) => {
     fields[oneOf.name] = mockField(oneOf.fieldsArray[0]);
     return fields;
   }, {});
@@ -327,40 +260,40 @@ function pickOneOf(oneofs: OneOf[]) {
 
 function mockScalar(type: string, fieldName: string): any {
   switch (type) {
-  case 'string':
-    return interpretMockViaFieldName(fieldName);
-  case 'number':
-    return 10;
-  case 'bool':
-    return true;
-  case 'int32':
-    return 10;
-  case 'int64':
-    return 20;
-  case 'uint32':
-    return 100;
-  case 'uint64':
-    return 100;
-  case 'sint32':
-    return 100;
-  case 'sint64':
-    return 1200;
-  case 'fixed32':
-    return 1400;
-  case 'fixed64':
-    return 1500;
-  case 'sfixed32':
-    return 1600;
-  case 'sfixed64':
-    return 1700;
-  case 'double':
-    return 1.4;
-  case 'float':
-    return 1.1;
-  case 'bytes':
-    return new Buffer('Hello');
-  default:
-    return null;
+    case 'string':
+      return interpretMockViaFieldName(fieldName);
+    case 'number':
+      return 10;
+    case 'bool':
+      return true;
+    case 'int32':
+      return 10;
+    case 'int64':
+      return 20;
+    case 'uint32':
+      return 100;
+    case 'uint64':
+      return 100;
+    case 'sint32':
+      return 100;
+    case 'sint64':
+      return 1200;
+    case 'fixed32':
+      return 1400;
+    case 'fixed64':
+      return 1500;
+    case 'sfixed32':
+      return 1600;
+    case 'sfixed64':
+      return 1700;
+    case 'double':
+      return 1.4;
+    case 'float':
+      return 1.1;
+    case 'bytes':
+      return new Buffer('Hello');
+    default:
+      return null;
   }
 }
 
