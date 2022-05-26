@@ -35,8 +35,10 @@ import {
   LoadProtoStatus,
   OnProtoUpload,
   UploadProtoResponse,
-  MissingImportFile,
-  EditorTabs
+  FileWithImports,
+  EditorTabs,
+  PlaceholderFile,
+  RawEntitySpec
 } from '../../api';
 import { arrayMoveImmutable as arrayMove } from '../../utils'
 import { Store } from '../../storage/Store';
@@ -49,7 +51,7 @@ function combineTargetToUrl(target: GRPCTargetInfo): string {
 
 interface BloomRPCApplicationProps {
   appId: string;
-  spec?: EntitySpec;
+  spec?: RawEntitySpec;
 }
 
 const DEFAULT_APP_ID = 'standalone';
@@ -63,8 +65,8 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   });
   const [modalMissingImportsOpen, setModalMissingImportsOpen] = useState(false);
 
-  const isImport = React.useRef<MissingImportFile | undefined>();
-  const missingImports = React.useRef<MissingImportFile[]>([]);
+  const isImport = React.useRef<FileWithImports | undefined>();
+  const missingImports = React.useRef<FileWithImports[]>([]);
 
   const bloomRPCApi = useApi(bloomRPCApiRef);
 
@@ -118,27 +120,34 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
    */
   async function hydrateEditor() {
     setLoading(true);
-    const entitySpec = { ...(spec || {}) } as EntitySpec;
+    const rawSpec = { ...(spec || {}) } as RawEntitySpec;
+    const entitySpec: EntitySpec = {
+      owner: rawSpec.owner,
+      system: rawSpec.system,
+      lifecycle: rawSpec.lifecycle,
+      type: rawSpec.type,
+      definition: rawSpec.definition,
+      imports: rawSpec.imports?.map(mapRawPlaceholderFile),
+      files: rawSpec.files?.map(mapRawPlaceholderFile) || [],
+      targets: rawSpec.targets,
+    };
 
     const savedProtos = getProtos();
 
     if (savedProtos.length) {
-      // ent itySpec.definition
-      const processProtos: RawPlaceholderFile[] = savedProtos.map(p => ({
-        file_name: p.fileName,
-        file_path: p.filePath,
-        is_preloaded: true,
-        import_paths: p.importPaths,
+      const processProtos: PlaceholderFile[] = savedProtos.map(p => ({
+        ...p,
+        isPreloaded: true,
       }));
 
-      const fromSpec = spec?.files || [];
+      const fromSpec = entitySpec.files || [];
 
       // unique protofiles
-      [fromSpec].flat().forEach((proto: RawPlaceholderFile) => {
+      fromSpec.forEach((proto: PlaceholderFile) => {
         if (!proto) return;
 
         // check if saved
-        const index = processProtos.findIndex(({ file_path }) => file_path === proto.file_path);
+        const index = processProtos.findIndex(({ filePath }) => filePath === proto.filePath);
         if (index > -1) {
           processProtos[index] = {
             ...processProtos[index],
@@ -151,8 +160,6 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
       entitySpec.files = processProtos;
     }
-
-    entitySpec.files = entitySpec.files || [];
 
     bloomRPCApi.getProto({ entitySpec })
       .then(res => {
@@ -207,8 +214,8 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
         if (res.missingImports?.length) {
           // Merge missing imports
-          const map = new Map<string, MissingImportFile>();
-          const addToMap = (imp: MissingImportFile) => map.set(imp.filePath, imp);
+          const map = new Map<string, FileWithImports>();
+          const addToMap = (imp: FileWithImports) => map.set(imp.filePath, imp);
 
           missingImports.current.concat(res.missingImports).forEach(addToMap);
           missingImports.current = Array.from(map.values());
@@ -402,11 +409,11 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
                   <strong>{isImport.current.filePath}</strong> is missing these files
                   <List
                     bordered={false}
-                    dataSource={isImport.current?.importPaths}
+                    dataSource={isImport.current?.missing}
                     renderItem={item => (
                       <List.Item>
                         <Icon type='file' style={{ marginRight: 10 }} />
-                        {item}
+                        {item.filePath}
                       </List.Item>
                     )}
                   />
@@ -436,7 +443,7 @@ export function App() {
   return (
     <BloomRPCApplication
       appId={entity?.metadata?.name || DEFAULT_APP_ID}
-      spec={entity?.spec as EntitySpec | undefined}
+      spec={entity?.spec as RawEntitySpec | undefined}
     />
   )
 }
@@ -589,6 +596,19 @@ function handleMethodDoubleClick(editorTabs: EditorTabs, setTabs: React.Dispatch
   }
 
 }
+
+const mapRawPlaceholderFile = ({
+  file_name, is_library, file_path,
+  url, is_preloaded, imports,
+}: RawPlaceholderFile): PlaceholderFile => ({
+  fileName: file_name,
+  filePath: file_path,
+  isPreloaded: is_preloaded,
+  isLibrary: is_library,
+  imports: imports?.map(mapRawPlaceholderFile),
+  url
+});
+
 
 const styles = {
   layout: {

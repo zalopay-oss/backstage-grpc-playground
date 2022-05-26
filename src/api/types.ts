@@ -51,6 +51,26 @@ export interface BaseFile {
 
 export interface CertFile extends BaseFile { }
 
+export interface PlaceholderFile extends FileWithImports {
+  isPreloaded?: boolean;
+  url?: string;
+  isLibrary?: boolean;
+}
+
+export interface FileWithImports extends BaseFile {
+  imports?: PlaceholderFile[];
+  missing?: PlaceholderFile[];
+}
+
+export interface RawPlaceholderFile {
+  file_name: string;
+  file_path: string;
+  is_preloaded?: boolean;
+  imports?: RawPlaceholderFile[];
+  is_library?: boolean;
+  url?: string;
+}
+
 export interface EditorTabRequest extends EditorRequest {
   id: string
 }
@@ -64,20 +84,18 @@ export interface GRPCTargetInfo {
   port?: number;
 }
 
-export interface MissingImportFile extends BaseFile {
-  importPaths?: string[];
-}
-
-export interface RawPlaceholderFile {
-  file_name: string;
-  file_path: string;
-  is_preloaded?: boolean;
-  import_paths?: string[];
-  is_library?: boolean;
-  url?: string;
-}
-
 export interface EntitySpec {
+  type: string;
+  lifecycle: string;
+  owner: string;
+  definition: string; // stringified PlaceholderFile
+  files: PlaceholderFile[];
+  system?: string;
+  targets?: GRPCTarget;
+  imports?: PlaceholderFile[];
+}
+
+export interface RawEntitySpec {
   type: string;
   lifecycle: string;
   owner: string;

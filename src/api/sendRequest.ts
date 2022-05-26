@@ -112,7 +112,7 @@ export class GRPCServerRequest extends EventEmitter {
           interactive: this.interactive,
           methodName: this.protoInfo.methodName,
           serviceName: this.protoInfo.service.serviceName,
-          importPaths: this.protoInfo.service.proto.importPaths,
+          imports: this.protoInfo.service.proto.imports,
           proto: this.protoInfo.service.proto.filePath,
           // proto: this.protoInfo.service.proto.protoText,
         };

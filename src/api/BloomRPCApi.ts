@@ -1,6 +1,6 @@
 import { createApiRef } from "@backstage/core-plugin-api";
 import { ProtoFile } from "./protobuf";
-import { EntitySpec, LoadProtoStatus, MissingImportFile } from "./types";
+import { EntitySpec, LoadProtoStatus, FileWithImports, PlaceholderFile } from "./types";
 
 /**
  * Options you can pass into a catalog request for additional information.
@@ -19,21 +19,21 @@ export interface GetProtoPayload {
 
 export interface UploadProtoPayload {
   files: FileList | File[];
-  isImport?: MissingImportFile;
+  isImport?: FileWithImports;
   fileMappings?: Record<string, string>;
 }
 
 export interface UploadProtoResponse {
   status: LoadProtoStatus;
   protos?: ProtoFile[];
-  missingImports?: MissingImportFile[];
+  missingImports?: FileWithImports[];
   message?: string;
 }
 
 export interface SendRequestPayload {
   requestId: string;
   proto: string;
-  importPaths?: string[];
+  imports?: PlaceholderFile[];
   requestData: {
     inputs: Object;
     metadata: Object;
