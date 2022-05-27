@@ -2,11 +2,12 @@
 import { Root, Service } from 'protobufjs';
 import { ServiceMethodsPayload } from './bloomrpc-mock';
 import { GrpcObject } from './makeClient';
+import { PlaceholderFile } from './types';
 
 export interface Proto {
   fileName: string;
   filePath: string;
-  importPaths?: string[];
+  imports?: PlaceholderFile[];
   protoText: string;
   ast: GrpcObject;
   root: Root;
@@ -16,7 +17,7 @@ export interface SavedProto {
   fileName: string;
   filePath: string;
   protoText?: string;
-  importPaths?: string[];
+  imports?: PlaceholderFile[];
 }
 
 export interface ProtoFile {
