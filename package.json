@@ -61,6 +61,7 @@
     "@types/mousetrap": "^1.6.9",
     "@types/node": "*",
     "@types/path-parse": "^1.0.19",
+    "@types/uuid": "^8.3.4",
     "cross-fetch": "^3.1.5",
     "msw": "^0.35.0"
   },
