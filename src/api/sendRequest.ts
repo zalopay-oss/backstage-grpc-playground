@@ -4,7 +4,7 @@
 // eslint-disable-next-line no-restricted-imports
 import EventEmitter from "events";
 import { ProtoInfo } from "./protoInfo";
-import { Certificate } from "./types";
+import { Certificate, LoadProtoStatus } from "./types";
 import {
   GrpcWebClientBase,
   ClientReadableStream,
@@ -12,7 +12,7 @@ import {
   MethodDescriptor,
   MethodType,
 } from 'grpc-web';
-import { SendRequestPayload, SendServerRequest } from "./BloomRPCApi";
+import { SendRequestPayload, SendServerRequest, UploadProtoResponse } from "./BloomRPCApi";
 import { v4 as uuid } from 'uuid';
 import { fetchEventSource, FetchEventSourceInit, EventStreamContentType } from '@microsoft/fetch-event-source';
 
@@ -47,6 +47,7 @@ export const GRPCEventType = {
   DATA: "DATA",
   ERROR: "ERROR",
   END: "END",
+  MISSING_IMPORTS: "MISSING_IMPORTS",
 };
 
 class RetriableError extends Error { }
@@ -147,7 +148,14 @@ export class GRPCServerRequest extends EventEmitter {
               if (res.ok && res.headers.get('content-type') === EventStreamContentType) {
                 return; // everything's good
               } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
-                // client-side errors are usually non-retriable:
+                if (res.status === 400) {
+                  const uploadProtoRes = await res.json() as UploadProtoResponse | undefined;
+
+                  if (uploadProtoRes?.status === LoadProtoStatus.part) {
+                    this.emit(GRPCEventType.MISSING_IMPORTS, uploadProtoRes);
+                  }
+                }
+
                 throw new FatalError();
               } else {
                 throw new RetriableError();

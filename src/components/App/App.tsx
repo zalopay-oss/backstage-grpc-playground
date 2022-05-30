@@ -2,13 +2,14 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Icon, Spin, Layout, notification, Modal, Button, List } from 'antd';
+import { Icon, Spin, Layout, Modal, Button, List } from 'antd';
 import { fileOpen, directoryOpen } from 'browser-fs-access';
 import { v4 as uuidv4 } from 'uuid';
 import pathParse from 'path-parse';
 import { useApi } from '@backstage/core-plugin-api';
 import { useEntity } from '@backstage/plugin-catalog-react';
 
+import { handleProtoUpload, ProtoContextProvider, useProtoContext } from './ProtoProvider';
 import { Sidebar } from './Sidebar';
 import { TabData, TabList } from './TabList';
 import {
@@ -17,7 +18,6 @@ import {
   getProtos,
   getRequestInfo,
   getTabs,
-  storeProtos,
   storeRequestInfo,
   storeTabs,
 } from '../../storage';
@@ -33,8 +33,6 @@ import {
   ProtoService,
   SavedProto,
   RawPlaceholderFile,
-  LoadProtoStatus,
-  OnProtoUpload,
   UploadProtoResponse,
   FileWithImports,
   EditorTabs,
@@ -59,15 +57,20 @@ const DEFAULT_APP_ID = 'standalone';
 
 const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }) => {
   const [isLoading, setLoading] = useState(false);
-  const [protos, setProtosState] = useState<ProtoFile[]>([]);
   const [editorTabs, setEditorTabs] = useState<EditorTabs>({
     activeKey: "0",
     tabs: [],
   });
-  const [modalMissingImportsOpen, setModalMissingImportsOpen] = useState(false);
 
-  const importFor = React.useRef<FileWithImports | undefined>();
-  const missingImports = React.useRef<FileWithImports[]>([]);
+  const {
+    protos,
+    setProtos,
+    handleProtoResult,
+    toggleModalMissingImports,
+    modalMissingImportsOpen,
+    importFor,
+    ignoreCurrentMissingImport,
+  } = useProtoContext()!;
 
   const bloomRPCApi = useApi(bloomRPCApiRef);
 
@@ -76,11 +79,6 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   function setTabs(props: EditorTabs) {
     setEditorTabs(props);
     storeTabs(props);
-  }
-
-  function setProtos(props: ProtoFile[]) {
-    setProtosState(props);
-    storeProtos(props);
   }
 
   useEffect(() => {
@@ -182,65 +180,6 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
       });
   }
 
-  function handleMissingImport() {
-    const [missingFor] = missingImports.current || [];
-    if (!missingFor) return;
-    importFor.current = missingFor;
-
-    toggleModalMissingImports();
-  }
-
-  const toggleModalMissingImports = () => {
-    setModalMissingImportsOpen(o => !o);
-  }
-
-  const handleProtoResult = (res: UploadProtoResponse) => {
-    const onProtoUpload = handleProtoUpload(setProtos, protos);
-
-    importFor.current = undefined;
-
-    if (res.protos) {
-      if (missingImports.current.length) {
-        missingImports.current = missingImports.current.filter(current => {
-          return !res.protos!.find(resolved => resolved.proto.filePath === current.filePath)
-        })
-      }
-    }
-
-    switch (res?.status) {
-      case LoadProtoStatus.part: {
-        if (res.protos) {
-          onProtoUpload(res.protos);
-        }
-
-        if (res.missingImports?.length) {
-          // Merge missing imports
-          const map = new Map<string, FileWithImports>();
-          const addToMap = (imp: FileWithImports) => map.set(imp.filePath, imp);
-
-          missingImports.current.concat(res.missingImports).forEach(addToMap);
-          missingImports.current = Array.from(map.values());
-        }
-        break;
-      }
-      case LoadProtoStatus.ok:
-        if (res.protos) {
-          onProtoUpload(res.protos);
-        }
-        break;
-
-      default:
-      case LoadProtoStatus.fail:
-        onProtoUpload(protos, new Error(res.message || 'Unknown error'));
-        break;
-    }
-
-    if (missingImports.current.length) {
-      // still missing imports
-      handleMissingImport();
-    }
-  }
-
   const openFileUpload = async (directory?: boolean) => {
     let choosenFiles;
 
@@ -275,12 +214,12 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
       uploadFiles.forEach(file => {
         fileMappings![file.name] = file.webkitRelativePath;
       });
-    } else if (importFor.current) {
+    } else if (importFor) {
       fileMappings = {};
       let relativePath: string | undefined;
 
       try {
-        relativePath = pathParse(importFor.current.missing?.[0].filePath || '').dir;
+        relativePath = pathParse(importFor.missing?.[0].filePath || '').dir;
       } catch (err) {
         // ignore
       }
@@ -293,11 +232,11 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
     const res: UploadProtoResponse = await bloomRPCApi.uploadProto({
       files: uploadFiles,
-      importFor: importFor.current,
+      importFor: importFor,
       fileMappings,
     });
 
-    handleProtoResult(res);
+    handleProtoResult(res, true);
   }
 
   const onClickOpenFile = () => {
@@ -308,22 +247,6 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   const onClickOpenDirectory = () => {
     toggleModalMissingImports();
     openFileUpload(true);
-  }
-
-  const onClickIgnore = () => {
-    missingImports.current = missingImports.current.filter(f => {
-      return f.filePath !== importFor.current?.filePath
-    });
-    importFor.current = undefined;
-
-    toggleModalMissingImports();
-
-    if (missingImports.current.length) {
-      // 100ms is for current modalMissingImport to finish its closing animation
-      setTimeout(() => {
-        handleMissingImport();
-      }, 100);
-    }
   }
 
   return (
@@ -410,21 +333,21 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
                 <Button key="open-directory" icon='folder-add' type="primary" onClick={onClickOpenDirectory}>
                   Import directory
                 </Button>,
-                <Button key="back" type="danger" icon='stop' onClick={onClickIgnore}>
+                <Button key="back" type="danger" icon='stop' onClick={ignoreCurrentMissingImport}>
                   Ignore
                 </Button>,
               ]}
               title="Missing dependencies"
               destroyOnClose
-              onCancel={onClickIgnore}
+              onCancel={ignoreCurrentMissingImport}
               visible={modalMissingImportsOpen}
             >
-              {importFor.current ? (
+              {importFor ? (
                 <>
-                  <strong>{importFor.current.filePath}</strong> is missing these files
+                  <strong>{importFor.filePath}</strong> is missing these files
                   <List
                     bordered={false}
-                    dataSource={importFor.current?.missing}
+                    dataSource={importFor?.missing}
                     renderItem={item => (
                       <List.Item>
                         <Icon type='file' style={{ marginRight: 10 }} />
@@ -446,9 +369,11 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
 export function StandaloneApp() {
   return (
-    <BloomRPCApplication
-      appId={DEFAULT_APP_ID}
-    />
+    <ProtoContextProvider>
+      <BloomRPCApplication
+        appId={DEFAULT_APP_ID}
+      />
+    </ProtoContextProvider>
   )
 }
 
@@ -456,10 +381,12 @@ export function App() {
   const { entity } = useEntity();
 
   return (
-    <BloomRPCApplication
-      appId={entity?.metadata?.name || DEFAULT_APP_ID}
-      spec={entity?.spec as RawEntitySpec | undefined}
-    />
+    <ProtoContextProvider>
+      <BloomRPCApplication
+        appId={entity?.metadata?.name || DEFAULT_APP_ID}
+        spec={entity?.spec as RawEntitySpec | undefined}
+      />
+    </ProtoContextProvider>
   )
 }
 
@@ -528,37 +455,6 @@ function loadTabs(editorTabs: EditorTabsStorage, loadedProtos?: ProtoFile[]): Ed
   storedEditTabs.tabs = previousTabs.filter((tab) => tab) as TabData[];
 
   return storedEditTabs;
-}
-
-/**
- *
- * @param setProtos
- * @param protos
- */
-function handleProtoUpload(setProtos: React.Dispatch<ProtoFile[]>, protos: ProtoFile[]): OnProtoUpload {
-  return function (newProtos: ProtoFile[], err: Error | void) {
-    if (err) {
-      notification.error({
-        message: "Error while importing protos",
-        description: err.message,
-        duration: 5,
-        placement: "bottomLeft",
-        style: {
-          width: "89%",
-          wordBreak: "break-all",
-        }
-      });
-    }
-
-    const protoMinusExisting = protos.filter((proto) => {
-      return !newProtos.find((p) => p.fileName === proto.fileName)
-    });
-
-    const appProtos = [...protoMinusExisting, ...newProtos];
-    setProtos(appProtos);
-
-    return appProtos;
-  }
 }
 
 /**

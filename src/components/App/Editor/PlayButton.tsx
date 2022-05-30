@@ -13,10 +13,16 @@ import {
   addResponseStreamData, setStreamCommitted
 } from './actions';
 import { ControlsStateProps } from './Controls';
-import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, bloomRPCApiRef, SendServerRequest } from '../../../api';
+import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, bloomRPCApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
 import { useApi } from '@backstage/core-plugin-api';
+import { ProtoContextType, useProtoContext } from '../ProtoProvider';
 
-export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest }: ControlsStateProps & { sendServerRequest: SendServerRequest }) => {
+type MakeRequestPayload = ControlsStateProps & {
+  protoContext: ProtoContextType,
+  sendServerRequest: SendServerRequest
+}
+
+export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, protoContext }: MakeRequestPayload) => {
   // Do nothing if not set
   if (!protoInfo) {
     return;
@@ -78,6 +84,21 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest }: C
     }));
   });
 
+  grpcRequest.on(GRPCEventType.MISSING_IMPORTS, (uploadProtoRes: UploadProtoResponse) => {
+    protoContext.handleProtoResult(uploadProtoRes);
+
+    let handlerId: string | undefined;
+    // eslint-disable-next-line prefer-const
+    handlerId = protoContext.addUploadedListener(protos => {
+      protoContext.removeUploadedListener(handlerId!);
+
+      if (protos.find(p => p.proto.filePath === protoInfo.service.proto.filePath)) {
+        // Re-send
+        grpcRequest.send();
+      }
+    })
+  });
+
   grpcRequest.on(GRPCEventType.DATA, (data: object, metaInfo: ResponseMetaInformation) => {
     if (metaInfo.stream && state.interactive) {
       dispatch(addResponseStreamData({
@@ -126,6 +147,7 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
   //     bloomRPCApi.sendServerRequestStream.bind(bloomRPCApi) :
   //     bloomRPCApi.sendServerRequest.bind(bloomRPCApi), [state.interactive]);
   const sendServerRequest = bloomRPCApi.sendServerRequest.bind(bloomRPCApi);
+  const protoContext = useProtoContext()!;
 
   React.useEffect(() => {
     if (!active) {
@@ -137,7 +159,7 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
         return
       }
 
-      makeRequest({ dispatch, state, protoInfo, sendServerRequest })
+      makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })
     })
   }, [
     // a bit of optimisation here: list all state properties needed in this component
@@ -148,13 +170,14 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
     state.interactive,
     state.tlsCertificate,
     sendServerRequest,
+    protoContext,
   ])
 
   return (
     <Icon
       type={state.loading ? "pause-circle" : "play-circle"}
       theme="filled" style={{ ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) }}
-      onClick={() => makeRequest({ dispatch, state, protoInfo, sendServerRequest })}
+      onClick={() => makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })}
     />
   )
 }
