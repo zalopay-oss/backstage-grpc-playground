@@ -63,8 +63,8 @@ export class BloomRPCApiClient implements BloomRPCApi {
       formData.append('files[]', file, file.name);
     }
 
-    if (payload.isImport) {
-      formData.append('importFor', JSON.stringify(payload.isImport));
+    if (payload.importFor) {
+      formData.append('importFor', JSON.stringify(payload.importFor));
     }
 
     if (payload.fileMappings) {

@@ -19,7 +19,7 @@ export interface GetProtoPayload {
 
 export interface UploadProtoPayload {
   files: FileList | File[];
-  isImport?: FileWithImports;
+  importFor?: FileWithImports;
   fileMappings?: Record<string, string>;
 }
 

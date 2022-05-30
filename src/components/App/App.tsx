@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Icon, Spin, Layout, notification, Modal, Button, List } from 'antd';
 import { fileOpen, directoryOpen } from 'browser-fs-access';
 import { v4 as uuidv4 } from 'uuid';
+import pathParse from 'path-parse';
 import { useApi } from '@backstage/core-plugin-api';
 import { useEntity } from '@backstage/plugin-catalog-react';
 
@@ -65,7 +66,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   });
   const [modalMissingImportsOpen, setModalMissingImportsOpen] = useState(false);
 
-  const isImport = React.useRef<FileWithImports | undefined>();
+  const importFor = React.useRef<FileWithImports | undefined>();
   const missingImports = React.useRef<FileWithImports[]>([]);
 
   const bloomRPCApi = useApi(bloomRPCApiRef);
@@ -184,7 +185,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   function handleMissingImport() {
     const [missingFor] = missingImports.current || [];
     if (!missingFor) return;
-    isImport.current = missingFor;
+    importFor.current = missingFor;
 
     toggleModalMissingImports();
   }
@@ -196,7 +197,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   const handleProtoResult = (res: UploadProtoResponse) => {
     const onProtoUpload = handleProtoUpload(setProtos, protos);
 
-    isImport.current = undefined;
+    importFor.current = undefined;
 
     if (res.protos) {
       if (missingImports.current.length) {
@@ -274,11 +275,25 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
       uploadFiles.forEach(file => {
         fileMappings![file.name] = file.webkitRelativePath;
       });
+    } else if (importFor.current) {
+      fileMappings = {};
+      let relativePath: string | undefined;
+
+      try {
+        relativePath = pathParse(importFor.current.missing?.[0].filePath || '').dir;
+      } catch (err) {
+        // ignore
+      }
+
+      uploadFiles.forEach(file => {
+        fileMappings![file.name] = file.webkitRelativePath ||
+          (relativePath ? [relativePath, file.name].join('/') : '');
+      });
     }
 
     const res: UploadProtoResponse = await bloomRPCApi.uploadProto({
       files: uploadFiles,
-      isImport: isImport.current,
+      importFor: importFor.current,
       fileMappings,
     });
 
@@ -297,9 +312,9 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
   const onClickIgnore = () => {
     missingImports.current = missingImports.current.filter(f => {
-      return f.filePath !== isImport.current?.filePath
+      return f.filePath !== importFor.current?.filePath
     });
-    isImport.current = undefined;
+    importFor.current = undefined;
 
     toggleModalMissingImports();
 
@@ -404,12 +419,12 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
               onCancel={onClickIgnore}
               visible={modalMissingImportsOpen}
             >
-              {isImport.current ? (
+              {importFor.current ? (
                 <>
-                  <strong>{isImport.current.filePath}</strong> is missing these files
+                  <strong>{importFor.current.filePath}</strong> is missing these files
                   <List
                     bordered={false}
-                    dataSource={isImport.current?.missing}
+                    dataSource={importFor.current?.missing}
                     renderItem={item => (
                       <List.Item>
                         <Icon type='file' style={{ marginRight: 10 }} />
