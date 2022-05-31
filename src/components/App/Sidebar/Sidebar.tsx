@@ -1,7 +1,18 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import React, { useEffect, useState, CSSProperties } from "react";
-import { Menu, Button, Icon, Dropdown, Modal, Tooltip, Tree, Input } from 'antd';
+
+import {
+  DeleteOutlined,
+  EyeOutlined,
+  FileOutlined,
+  FileSearchOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+
+import { Menu, Button, Dropdown, Modal, Tooltip, Tree, Input, TreeDataNode } from 'antd';
 import { Badge } from '../Badge/Badge';
 import { PathResolution } from "./PathResolution";
 import { getImportPaths } from "../../../storage";
@@ -70,6 +81,42 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
     }
   }
 
+  const menu = (
+    <Menu
+      items={[
+        {
+          'key': '1',
+          onClick: () => {
+            openFileUpload();
+          },
+          icon: <FileOutlined />,
+          label: 'Import from file'
+        },
+      ]}
+    />
+  );
+
+  const treeData: TreeDataNode[] = protos.map(proto => ({
+    icon: <Badge type="protoFile"> P </Badge>,
+    key: proto.proto.filePath,
+    title: proto.fileName,
+    children: Object.keys(proto.services).map((service) => ({
+      icon: <Badge type="service"> S </Badge>,
+      title: service,
+      key: `${proto.fileName}-${service}`,
+      children: proto.services[service].methodsName
+        .filter((name) => {
+          if (filterMatch === null) return true;
+          return name.toLowerCase().includes(filterMatch.toLowerCase());
+        })
+        .map((method: any) => ({
+          icon: <Badge type="method"> M </Badge>,
+          title: method,
+          key: `${proto.proto.filePath}||method:${method}||service:${service}`
+        }))
+    }))
+  }));
+
   return (
     <>
       <div style={styles.sidebarTitleContainer}>
@@ -86,22 +133,9 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
             //   importProtos(onProtoUpload, importPaths)
             // }}
             onClick={() => openFileUpload()}
-            overlay={
-              <Menu>
-                <Menu.Item key="1" onClick={() => openFileUpload()}>
-                  <Icon type="file" />
-                  Import from file
-                </Menu.Item>
-                {/* <Menu.Item key="2" onClick={() => {
-                  setImportReflectionVisible(true)
-                }}>
-                  <Icon type="eye" />
-                  Import from server reflection
-                </Menu.Item> */}
-              </Menu>
-            }
+            overlay={menu}
           >
-            <Icon type="plus" />
+            <PlusOutlined />
           </Dropdown.Button>
         </div>
       </div>
@@ -110,38 +144,35 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
         <div style={{ width: "50%" }}>
           <Tooltip title="Reload" placement="bottomLeft" align={{ offset: [-8, 0] }}>
             <Button
-              type="ghost"
-              style={{ height: 24, paddingRight: 5, paddingLeft: 5 }}
+              style={{ paddingRight: 5, paddingLeft: 5 }}
               onClick={onReload}
-            >
-              <Icon type="reload" style={{ cursor: "pointer", color: "#1d93e6" }} />
-            </Button>
+              icon={<ReloadOutlined style={{ cursor: "pointer", color: "#1d93e6" }} />}
+              size='small'
+            />
           </Tooltip>
 
           <Tooltip title="Import Paths" placement="bottomLeft" align={{ offset: [-8, 0] }}>
             <Button
-              type="ghost"
-              style={{ height: 24, paddingRight: 5, paddingLeft: 5, marginLeft: 5 }}
+              style={{ paddingRight: 5, paddingLeft: 5, marginLeft: 5 }}
               onClick={() => setImportPathsVisible(true)}
-            >
-              <Icon type="file-search" style={{ cursor: "pointer", color: "#1d93e6" }} />
-            </Button>
+              icon={<FileSearchOutlined style={{ cursor: "pointer", color: "#1d93e6" }} />}
+              size='small'
+            />
           </Tooltip>
 
           <Tooltip title="Filter method names" placement="bottomLeft" align={{ offset: [-8, 0] }}>
             <Button
-              type="ghost"
-              style={{ height: 24, paddingRight: 5, paddingLeft: 5, marginLeft: 5 }}
+              style={{ paddingRight: 5, paddingLeft: 5, marginLeft: 5 }}
               onClick={() => toggleFilter()}
-            >
-              <Icon type="filter" style={{ cursor: "pointer", color: "#1d93e6" }} />
-            </Button>
+              icon={<FilterOutlined style={{ cursor: "pointer", color: "#1d93e6" }} />}
+              size='small'
+            />
           </Tooltip>
 
           <Modal
             title={(
               <div>
-                <Icon type="file-search" />
+                <FileSearchOutlined />
                 <span style={{ marginLeft: 10 }}> Import Paths </span>
               </div>
             )}
@@ -163,7 +194,7 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
           <Modal
             title={(
               <div>
-                <Icon type="eye" />
+                <EyeOutlined />
                 <span style={{ marginLeft: 10 }}> Import from server reflection </span>
               </div>
             )}
@@ -185,9 +216,12 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
         </div>
         <div style={{ width: "50%", textAlign: "right" }}>
           <Tooltip title="Delete all" placement="bottomRight" align={{ offset: [10, 0] }}>
-            <Button type="ghost" style={{ height: 24, paddingRight: 5, paddingLeft: 5 }} onClick={onDeleteAll}>
-              <Icon type="delete" style={{ cursor: "pointer", color: "red" }} />
-            </Button>
+            <Button
+              style={{ paddingRight: 5, paddingLeft: 5 }}
+              onClick={onDeleteAll}
+              icon={<DeleteOutlined style={{ cursor: "pointer", color: "red" }} />}
+              size='small'
+             />
           </Tooltip>
         </div>
       </div>
@@ -209,7 +243,7 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
           defaultExpandAll
           onSelect={async (selectedKeys) => {
             const selected = selectedKeys.pop();
-            const protoDefinitions = processSelectedKey(selected);
+            const protoDefinitions = processSelectedKey(selected?.toString() || '');
 
             if (!protoDefinitions) {
               return;
@@ -217,9 +251,9 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
 
             onMethodSelected(protoDefinitions.methodName, protoDefinitions.protodef.services[protoDefinitions.serviceName]);
           }}
-          onDoubleClick={async (event, treeNode) => {
-            const selected = treeNode.props.eventKey;
-            const protoDefinitions = processSelectedKey(selected);
+          onDoubleClick={async (_event, treeNode) => {
+            const selected = treeNode.key;
+            const protoDefinitions = processSelectedKey(selected.toString());
 
             if (!protoDefinitions) {
               return;
@@ -228,37 +262,8 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
             // if the original one table doesn't exist, then ignore it
             onMethodDoubleClick(protoDefinitions.methodName, protoDefinitions.protodef.services[protoDefinitions.serviceName])
           }}
-        >
-          {protos.map((proto) => (
-            <Tree.TreeNode
-              icon={() => <Badge type="protoFile"> P </Badge>}
-              title={proto.fileName}
-              key={proto.fileName}
-            >
-              {Object.keys(proto.services).map((service) => (
-                <Tree.TreeNode
-                  icon={<Badge type="service"> S </Badge>}
-                  title={service}
-                  key={`${proto.fileName}-${service}`}
-                >
-
-                  {proto.services[service].methodsName
-                    .filter((name) => {
-                      if (filterMatch === null) return true;
-                      return name.toLowerCase().includes(filterMatch.toLowerCase());
-                    })
-                    .map((method: any) => (
-                      <Tree.TreeNode
-                        icon={<Badge type="method"> M </Badge>}
-                        title={method}
-                        key={`${proto.proto.filePath}||method:${method}||service:${service}`}
-                      />
-                    ))}
-                </Tree.TreeNode>
-              ))}
-            </Tree.TreeNode>
-          ))}
-        </Tree.DirectoryTree>}
+          treeData={treeData}
+        />}
       </div>
     </>
   );
@@ -290,6 +295,9 @@ const styles: {
     border: "2px solid #f3f6f9",
     borderRadius: "50%",
     cursor: "pointer"
+  },
+  menuIcon: {
+    marginRight: 8
   },
   optionsContainer: {
     background: "#fafafa",

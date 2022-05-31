@@ -3,11 +3,12 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
-import { Button, Icon, Tooltip, Switch, Modal, Menu, Dropdown } from 'antd';
+import { CaretDownOutlined, FilePptOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons';
+import { Button, Tooltip, Switch, Modal, Menu, Dropdown, MenuProps } from 'antd';
 import { setInteractive, setProtoVisibility, setGrpcWeb } from './actions';
 import { EditorAction } from './Editor';
-import {useState} from "react";
-import {TLSManager} from "./TLSManager";
+import { useState } from "react";
+import { TLSManager } from "./TLSManager";
 import { ProtoInfo, Certificate } from '../../../api';
 
 interface OptionsProps {
@@ -25,66 +26,78 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
 
   const [tlsModalVisible, setTlsModalVisible] = useState(false);
 
+  const lockIconProps = {
+    style: {
+      fontSize: 18,
+      color: tlsSelected ? "#28d440" : "#bdbcbc",
+    }
+  };
+
+  const menu = (
+    <Menu
+      items={[
+        {
+          key: '0',
+          onClick: () => {
+            onClickExport?.()
+          },
+          label: 'Export response'
+        },
+      ]}
+    />
+  )
+
   return (
-    <div style={{...styles.optionContainer, ...styles.inline}}>
+    <div style={{ ...styles.optionContainer, ...styles.inline }}>
 
-      <div style={{paddingLeft: 15}}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-          }}>
-            <Tooltip placement="bottom" title={tlsSelected ? "Secure Connection" : "Unsecure Connection"}>
-              <Icon
-                  type={tlsSelected ? "lock" : "unlock"}
-                  style={{
-                    fontSize: 18,
-                    color: tlsSelected ? "#28d440" : "#bdbcbc",
-                  }}
-              />
-            </Tooltip>
-            <span
-              onClick={() => setTlsModalVisible(true)}
-              style={styles.tlsButton}
-            >
-              <span style={{}}>TLS</span>
-            </span>
-          </div>
-
-          <Modal
-              title={(
-                  <div>
-                    <Icon type="lock" />
-                    <span style={{marginLeft: 10}}> TLS / SSL Manager </span>
-                  </div>
-              )}
-              visible={tlsModalVisible}
-              onCancel={() => setTlsModalVisible(false)}
-              onOk={() => setTlsModalVisible(false)}
-              bodyStyle={{padding: 0}}
-              width={750}
-              okText="Done"
-              cancelText="Close"
+      <div style={{ paddingLeft: 15 }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+        }}>
+          <Tooltip placement="bottom" title={tlsSelected ? "Secure Connection" : "Unsecure Connection"}>
+            {
+              tlsSelected ?
+                (<LockOutlined {...lockIconProps} />
+                ) : (
+                  <UnlockOutlined {...lockIconProps} />
+                )
+            }
+          </Tooltip>
+          <span
+            onClick={() => setTlsModalVisible(true)}
+            style={styles.tlsButton}
           >
-            <TLSManager
-                selected={tlsSelected}
-                onSelected={onTLSSelected}
-            />
-          </Modal>
+            <span style={{}}>TLS</span>
+          </span>
+        </div>
+
+        <Modal
+          title={(
+            <div>
+              <LockOutlined />
+              <span style={{ marginLeft: 10 }}> TLS / SSL Manager </span>
+            </div>
+          )}
+          visible={tlsModalVisible}
+          onCancel={() => setTlsModalVisible(false)}
+          onOk={() => setTlsModalVisible(false)}
+          bodyStyle={{ padding: 0 }}
+          width={750}
+          okText="Done"
+          cancelText="Close"
+        >
+          <TLSManager
+            selected={tlsSelected}
+            onSelected={onTLSSelected}
+          />
+        </Modal>
       </div>
 
       <div style={{ ...styles.inline }}>
-        <Dropdown overlay={(
-            <Menu>
-              <Menu.Item key="0">
-                <a onClick={(e) => {
-                  e.preventDefault();
-                  onClickExport?.()
-                }}>Export response</a>
-              </Menu.Item>
-            </Menu>
-        )} trigger={['click']}>
-          <div style={{ marginRight: 5, marginTop: 2, cursor: 'pointer', color: "#b5b5b5"}} >
-            <Icon type="caret-down" />
+        <Dropdown overlay={menu} trigger={['click']}>
+          <div style={{ marginRight: 5, marginTop: 2, cursor: 'pointer', color: "#b5b5b5" }} >
+            <CaretDownOutlined />
           </div>
         </Dropdown>
         {/* Hide GRPC-web */}
@@ -98,7 +111,7 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
             }}
           />
         </div> */}
-        <div style={{paddingRight: 10}}>
+        <div style={{ paddingRight: 10 }}>
           <Switch
             checkedChildren="Interactive"
             defaultChecked={interactiveChecked}
@@ -111,7 +124,7 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
         </div>
 
         <Button
-          icon="file-ppt"
+          icon={<FilePptOutlined />}
           type="dashed"
           onClick={() => dispatch(setProtoVisibility(true))}
         >
@@ -119,7 +132,7 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 const styles = {

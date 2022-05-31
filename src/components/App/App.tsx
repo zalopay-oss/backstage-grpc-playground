@@ -2,7 +2,14 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { Icon, Spin, Layout, Modal, Button, List } from 'antd';
+import {
+  FileAddOutlined,
+  FileOutlined,
+  FolderAddOutlined,
+  LoadingOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
+import { Spin, Layout, Modal, Button, List } from 'antd';
 import { fileOpen, directoryOpen } from 'browser-fs-access';
 import { v4 as uuidv4 } from 'uuid';
 import pathParse from 'path-parse';
@@ -250,7 +257,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   }
 
   return (
-    <Spin spinning={isLoading} indicator={<Icon type="loading" style={{ fontSize: 24 }} />}>
+    <Spin spinning={isLoading} indicator={<LoadingOutlined style={{ fontSize: 24 }} />}>
       <Layout style={styles.layout}>
         <Layout>
           <Layout.Sider style={styles.sider} width={300}>
@@ -327,13 +334,13 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
             <Modal
               footer={[
-                <Button key="open-file" icon='file-add' type="primary" onClick={onClickOpenFile}>
+                <Button key="open-file" icon={<FileAddOutlined />} type="primary" onClick={onClickOpenFile}>
                   Import file
                 </Button>,
-                <Button key="open-directory" icon='folder-add' type="primary" onClick={onClickOpenDirectory}>
+                <Button key="open-directory" icon={<FolderAddOutlined />} type="primary" onClick={onClickOpenDirectory}>
                   Import directory
                 </Button>,
-                <Button key="back" type="danger" icon='stop' onClick={ignoreCurrentMissingImport}>
+                <Button key="back" type="danger" icon={<StopOutlined />} onClick={ignoreCurrentMissingImport}>
                   Ignore
                 </Button>,
               ]}
@@ -350,7 +357,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
                     dataSource={importFor?.missing}
                     renderItem={item => (
                       <List.Item>
-                        <Icon type='file' style={{ marginRight: 10 }} />
+                        <FileOutlined style={{ marginRight: 10 }} />
                         {item.filePath}
                       </List.Item>
                     )}

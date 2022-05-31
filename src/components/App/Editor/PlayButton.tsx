@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable react-hooks/exhaustive-deps */
 import * as React from 'react';
-import { Icon, notification } from 'antd';
+import { notification } from 'antd';
 import * as Mousetrap from 'mousetrap'
 import 'mousetrap/plugins/global-bind/mousetrap-global-bind';
 import {
@@ -16,6 +16,7 @@ import { ControlsStateProps } from './Controls';
 import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, bloomRPCApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
 import { useApi } from '@backstage/core-plugin-api';
 import { ProtoContextType, useProtoContext } from '../ProtoProvider';
+import { PauseCircleFilled, PlayCircleFilled } from '@ant-design/icons';
 
 type MakeRequestPayload = ControlsStateProps & {
   protoContext: ProtoContextType,
@@ -173,13 +174,16 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
     protoContext,
   ])
 
-  return (
-    <Icon
-      type={state.loading ? "pause-circle" : "play-circle"}
-      theme="filled" style={{ ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) }}
-      onClick={() => makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })}
-    />
-  )
+  const iconProps = {
+    style: { ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) },
+    onClick: () => makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })
+  }
+
+  return state.loading ? (
+    <PauseCircleFilled {...iconProps} />
+  ) : (
+    <PlayCircleFilled {...iconProps} />
+  );
 }
 
 const styles = {

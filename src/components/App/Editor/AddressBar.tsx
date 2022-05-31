@@ -1,6 +1,16 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import * as React from 'react';
-import { Icon, Input, Modal, Select } from "antd";
+
+import {
+  DatabaseOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  LoadingOutlined,
+  PlusCircleOutlined,
+  ProjectOutlined,
+} from '@ant-design/icons';
+
+import { Input, Modal, Select } from "antd";
 import { RequestType } from "./RequestType";
 import { ChangeEvent, useEffect, useState } from "react";
 import { EditorEnvironment } from "./Editor";
@@ -53,114 +63,112 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
     return (environments || []).find(env => env.name === currentEnvironmentName)
   }, [environments, currentEnvironmentName]);
 
-  return (
-      <>
-        <Input.Group compact>
-          <Select
-              defaultValue={currentEnvironmentName}
-              value={currentEnvironmentName || undefined}
-              placeholder="Env"
-              style={{width: "20%"}}
-              dropdownStyle={{ minWidth: 200 }}
-              onSelect={(value: string) => {
-                // Save brand new environment
-                if (value === "new") {
-                  Modal.confirm({
-                    title: 'Environment Name',
-                    className: "env-modal",
-                    icon: (
-                        <Icon type="project" />
-                    ),
-                    onOk: () => {
-                      setConfirmedSave(true);
-                    },
-                    content: (
-                        // eslint-disable-next-line jsx-a11y/no-autofocus
-                        <Input autoFocus required placeholder="Staging" onChange={(e) => {
-                          setNewEnvironmentName(e.target.value);
-                        }} />
-                    ),
+  return <>
+    <Input.Group compact>
+      <Select
+          defaultValue={currentEnvironmentName}
+          value={currentEnvironmentName || undefined}
+          placeholder="Env"
+          style={{width: "20%"}}
+          dropdownStyle={{ minWidth: 200 }}
+          onSelect={(value: string) => {
+            // Save brand new environment
+            if (value === "new") {
+              Modal.confirm({
+                title: 'Environment Name',
+                className: "env-modal",
+                icon: (
+                    <ProjectOutlined />
+                ),
+                onOk: () => {
+                  setConfirmedSave(true);
+                },
+                content: (
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
+                    <Input autoFocus required placeholder="Staging" onChange={(e) => {
+                      setNewEnvironmentName(e.target.value);
+                    }} />
+                ),
 
-                    okText: 'Confirm',
-                    cancelText: 'Cancel',
-                  });
-                  return;
-                }
-
-                if (value === "update") {
-                  Modal.confirm({
-                    title: `Update ${currentEnvironmentName}?`,
-                    className: "env-modal",
-                    icon: (
-                        <Icon type="project" />
-                    ),
-                    onOk: () => {
-                      setConfirmedSave(true);
-                    },
-                    content: `Do you want to update the environment?`,
-                    okText: 'Confirm',
-                    cancelText: 'Cancel',
-                  });
-                  return;
-                }
-
-                if (value === "delete") {
-                  Modal.confirm({
-                    title: `Deleting ${currentEnvironmentName}?`,
-                    className: "env-modal",
-                    icon: (
-                        <Icon type="delete" />
-                    ),
-                    onOk: () => {
-                      setConfirmedDelete(true);
-                    },
-                    content: `Are you sure do you want to delete the environment?`,
-                    okText: 'Confirm',
-                    cancelText: 'Cancel',
-                  });
-                  return;
-                }
-
-                setCurrentEnvironmentName(value);
-
-                const selectedEnv = (environments || []).find(env => env.name === value);
-                onChangeEnvironment?.(selectedEnv);
-              }}
-          >
-            <Select.Option value="">
-              None
-            </Select.Option>
-
-            {environments && environments.map(environment => (
-              <Select.Option key={environment.name} value={environment.name}>{environment.name}</Select.Option>
-            ))}
-
-            {currentEnvironmentName &&
-              <Select.Option value="update" disabled={currentEnv?.isDefault}>
-                  <Icon type="edit" /> Update Environment
-              </Select.Option>
+                okText: 'Confirm',
+                cancelText: 'Cancel',
+              });
+              return;
             }
-            {currentEnvironmentName &&
-            <Select.Option value="delete" disabled={currentEnv?.isDefault}>
-                <Icon type="delete" /> Delete Environment
-            </Select.Option>
+
+            if (value === "update") {
+              Modal.confirm({
+                title: `Update ${currentEnvironmentName}?`,
+                className: "env-modal",
+                icon: (
+                    <ProjectOutlined />
+                ),
+                onOk: () => {
+                  setConfirmedSave(true);
+                },
+                content: `Do you want to update the environment?`,
+                okText: 'Confirm',
+                cancelText: 'Cancel',
+              });
+              return;
             }
-            <Select.Option value="new">
-              <Icon type="plus-circle" /> Save New Environment
-            </Select.Option>
-          </Select>
-          <Input
-              style={{width: "80%"}}
-              className="server-url"
-              addonAfter={(
-                  <div style={{display: "flex", alignItems: "center", width: "125px"}}>
-                    {loading ? <Icon type="loading"/> : <Icon type="database"/>}
-                    <RequestType protoInfo={protoInfo} />
-                  </div>
-              )}
-              value={url}
-              onChange={onChangeUrl}/>
-        </Input.Group>
-      </>
-  )
+
+            if (value === "delete") {
+              Modal.confirm({
+                title: `Deleting ${currentEnvironmentName}?`,
+                className: "env-modal",
+                icon: (
+                    <DeleteOutlined />
+                ),
+                onOk: () => {
+                  setConfirmedDelete(true);
+                },
+                content: `Are you sure do you want to delete the environment?`,
+                okText: 'Confirm',
+                cancelText: 'Cancel',
+              });
+              return;
+            }
+
+            setCurrentEnvironmentName(value);
+
+            const selectedEnv = (environments || []).find(env => env.name === value);
+            onChangeEnvironment?.(selectedEnv);
+          }}
+      >
+        <Select.Option value="">
+          None
+        </Select.Option>
+
+        {environments && environments.map(environment => (
+          <Select.Option key={environment.name} value={environment.name}>{environment.name}</Select.Option>
+        ))}
+
+        {currentEnvironmentName &&
+          <Select.Option value="update" disabled={currentEnv?.isDefault}>
+              <EditOutlined /> Update Environment
+          </Select.Option>
+        }
+        {currentEnvironmentName &&
+        <Select.Option value="delete" disabled={currentEnv?.isDefault}>
+            <DeleteOutlined /> Delete Environment
+        </Select.Option>
+        }
+        <Select.Option value="new">
+          <PlusCircleOutlined /> Save New Environment
+        </Select.Option>
+      </Select>
+      <Input
+          style={{width: "80%"}}
+          className="server-url"
+          addonAfter={(
+              <div style={{display: "flex", alignItems: "center", width: "125px"}}>
+                {loading ? <LoadingOutlined /> : <DatabaseOutlined />}
+                <RequestType protoInfo={protoInfo} />
+              </div>
+          )}
+          value={url}
+          onChange={onChangeUrl}/>
+    </Input.Group>
+  </>;
 }
