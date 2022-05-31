@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import * as React from 'react';
-import { Icon } from 'antd';
+import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import AceEditor from 'react-ace';
 import Resizable from 're-resizable';
 import { storeMetadata } from "../../../storage";
@@ -46,7 +46,7 @@ export function Metadata({ onClickMetadata, onMetadataChange, value }: MetadataP
               }
               onClickMetadata()
             }}
-          > {visibile ? <Icon type="down" /> : <Icon type="up" />} METADATA </a>
+          > {visibile ? <DownOutlined /> : <UpOutlined />} METADATA </a>
         </div>
 
         <div>
@@ -74,7 +74,7 @@ export function Metadata({ onClickMetadata, onMetadataChange, value }: MetadataP
         </div>
       </div>
     </Resizable>
-  )
+  );
 }
 
 const styles = {
