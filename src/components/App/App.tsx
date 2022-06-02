@@ -52,6 +52,13 @@ import { Store } from '../../storage/Store';
 import './app.css';
 
 function combineTargetToUrl(target: GRPCTargetInfo): string {
+  if (!target.port) {
+    return target.host;
+  }
+
+  if (target.port === 80) return target.host;
+  if (target.port === 443) return `https://${target.host}`;
+
   return `${target.host}:${target.port}`;
 }
 
@@ -340,7 +347,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
                 <Button key="open-directory" icon={<FolderAddOutlined />} type="primary" onClick={onClickOpenDirectory}>
                   Import directory
                 </Button>,
-                <Button key="back" type="danger" icon={<StopOutlined />} onClick={ignoreCurrentMissingImport}>
+                <Button key="back" danger icon={<StopOutlined />} onClick={ignoreCurrentMissingImport}>
                   Ignore
                 </Button>,
               ]}

@@ -80,7 +80,7 @@ export interface GRPCTarget {
 }
 
 export interface GRPCTargetInfo {
-  host?: string;
+  host: string;
   port?: number;
 }
 
