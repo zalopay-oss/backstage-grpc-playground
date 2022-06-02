@@ -109,23 +109,31 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
   function getEnvironments(): EditorEnvironment[] {
     const fromStorage = getEnvFromStorage();
 
-    if (spec?.targets && !fromStorage?.length) {
-      const fromSpec = Object.keys(spec.targets).map(name => {
-        return {
+    const map = new Map<string, EditorEnvironment>();
+
+    fromStorage.forEach(env => {
+      map.set(env.name, env);
+    })
+
+    if (spec?.targets) {
+      // fromSpec = Object.keys(spec.targets).map(name => {
+      Object.keys(spec.targets).forEach(name => {
+        map.set(name, {
           name,
           url: combineTargetToUrl(spec.targets![name]),
           isDefault: true,
           metadata: '',
           interactive: false,
           tlsCertificate: null as any
-        }
+        });
       });
-
-      saveEnvironments(fromSpec);
-      return fromSpec;
     }
 
-    return fromStorage;
+    const result = Array.from(map.values());
+
+    saveEnvironments(result);
+
+    return result;
   }
 
   /**
