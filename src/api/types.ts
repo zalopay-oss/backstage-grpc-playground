@@ -88,7 +88,7 @@ export interface EntitySpec {
   type: string;
   lifecycle: string;
   owner: string;
-  definition: string; // stringified PlaceholderFile
+  definition: string;
   files: PlaceholderFile[];
   system?: string;
   targets?: GRPCTarget;
@@ -99,7 +99,7 @@ export interface RawEntitySpec {
   type: string;
   lifecycle: string;
   owner: string;
-  definition: string; // stringified PlaceholderFile
+  definition: string;
   files: RawPlaceholderFile[];
   system?: string;
   targets?: GRPCTarget;

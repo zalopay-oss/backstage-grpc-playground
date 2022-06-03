@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import * as React from 'react';
+import React from 'react';
 
 import {
   DatabaseOutlined,
@@ -28,7 +28,7 @@ export interface AddressBarProps {
   onEnvironmentDelete?: (name: string) => void
 }
 
-export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnvironment, environments, onEnvironmentSave, onChangeEnvironment, onEnvironmentDelete}: AddressBarProps) {
+export function AddressBar({ loading, url, onChangeUrl, protoInfo, defaultEnvironment, environments, onEnvironmentSave, onChangeEnvironment, onEnvironmentDelete }: AddressBarProps) {
   const [currentEnvironmentName, setCurrentEnvironmentName] = useState<string>(defaultEnvironment || "");
   const [newEnvironmentName, setNewEnvironmentName] = useState<string>("");
 
@@ -63,13 +63,14 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
     return (environments || []).find(env => env.name === currentEnvironmentName)
   }, [environments, currentEnvironmentName]);
 
-  return <>
-    <Input.Group compact>
-      <Select
+  return (
+    <>
+      <Input.Group compact>
+        <Select
           defaultValue={currentEnvironmentName}
           value={currentEnvironmentName || undefined}
           placeholder="Env"
-          style={{width: "20%"}}
+          style={{ width: "20%" }}
           dropdownStyle={{ minWidth: 200 }}
           onSelect={(value: string) => {
             // Save brand new environment
@@ -78,16 +79,16 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
                 title: 'Environment Name',
                 className: "env-modal",
                 icon: (
-                    <ProjectOutlined />
+                  <ProjectOutlined />
                 ),
                 onOk: () => {
                   setConfirmedSave(true);
                 },
                 content: (
-                    // eslint-disable-next-line jsx-a11y/no-autofocus
-                    <Input autoFocus required placeholder="Staging" onChange={(e) => {
-                      setNewEnvironmentName(e.target.value);
-                    }} />
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  <Input autoFocus required placeholder="Staging" onChange={(e) => {
+                    setNewEnvironmentName(e.target.value);
+                  }} />
                 ),
 
                 okText: 'Confirm',
@@ -101,7 +102,7 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
                 title: `Update ${currentEnvironmentName}?`,
                 className: "env-modal",
                 icon: (
-                    <ProjectOutlined />
+                  <ProjectOutlined />
                 ),
                 onOk: () => {
                   setConfirmedSave(true);
@@ -118,7 +119,7 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
                 title: `Deleting ${currentEnvironmentName}?`,
                 className: "env-modal",
                 icon: (
-                    <DeleteOutlined />
+                  <DeleteOutlined />
                 ),
                 onOk: () => {
                   setConfirmedDelete(true);
@@ -135,40 +136,41 @@ export function AddressBar({loading, url, onChangeUrl, protoInfo, defaultEnviron
             const selectedEnv = (environments || []).find(env => env.name === value);
             onChangeEnvironment?.(selectedEnv);
           }}
-      >
-        <Select.Option value="">
-          None
-        </Select.Option>
-
-        {environments && environments.map(environment => (
-          <Select.Option key={environment.name} value={environment.name}>{environment.name}</Select.Option>
-        ))}
-
-        {currentEnvironmentName &&
-          <Select.Option value="update" disabled={currentEnv?.isDefault}>
-              <EditOutlined /> Update Environment
+        >
+          <Select.Option value="">
+            None
           </Select.Option>
-        }
-        {currentEnvironmentName &&
-        <Select.Option value="delete" disabled={currentEnv?.isDefault}>
-            <DeleteOutlined /> Delete Environment
-        </Select.Option>
-        }
-        <Select.Option value="new">
-          <PlusCircleOutlined /> Save New Environment
-        </Select.Option>
-      </Select>
-      <Input
-          style={{width: "80%"}}
+
+          {environments && environments.map(environment => (
+            <Select.Option key={environment.name} value={environment.name}>{environment.name}</Select.Option>
+          ))}
+
+          {currentEnvironmentName &&
+            <Select.Option value="update" disabled={currentEnv?.isDefault}>
+              <EditOutlined /> Update Environment
+            </Select.Option>
+          }
+          {currentEnvironmentName &&
+            <Select.Option value="delete" disabled={currentEnv?.isDefault}>
+              <DeleteOutlined /> Delete Environment
+            </Select.Option>
+          }
+          <Select.Option value="new">
+            <PlusCircleOutlined /> Save New Environment
+          </Select.Option>
+        </Select>
+        <Input
+          style={{ width: "80%" }}
           className="server-url"
           addonAfter={(
-              <div style={{display: "flex", alignItems: "center", width: "125px"}}>
-                {loading ? <LoadingOutlined /> : <DatabaseOutlined />}
-                <RequestType protoInfo={protoInfo} />
-              </div>
+            <div style={{ display: "flex", alignItems: "center", width: "125px" }}>
+              {loading ? <LoadingOutlined /> : <DatabaseOutlined />}
+              <RequestType protoInfo={protoInfo} />
+            </div>
           )}
           value={url}
-          onChange={onChangeUrl}/>
-    </Input.Group>
-  </>;
+          onChange={onChangeUrl} />
+      </Input.Group>
+    </>
+  );
 }

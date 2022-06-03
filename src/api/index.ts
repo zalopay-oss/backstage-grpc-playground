@@ -1,7 +1,6 @@
 export * from './GrpcPlaygroundApi';
 export * from './GrpcPlaygroundApiClient';
 export * from './importProtos';
-export * from './bloomrpc-mock';
 export * from './protobuf';
 export * from './protoInfo';
 export * from './sendRequest';

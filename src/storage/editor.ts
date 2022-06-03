@@ -1,4 +1,4 @@
-import { ProtoFile, EditorTabs, EditorRequest, EditorTabRequest, SavedProto, BaseFile, PlaceholderFile } from '../api';
+import { ProtoFile, EditorTabs, EditorRequest, EditorTabRequest, SavedProto, PlaceholderFile } from '../api';
 import { Store } from './Store';
 
 const EditorStore = new Store({
@@ -34,10 +34,8 @@ export function getUrl(): string | void {
  * @param protos
  */
 export function storeProtos(protos: ProtoFile[]) {
-  // EditorStore.set(KEYS.PROTOS, protos.map(proto => proto.proto.protoText));
   const protosToSave: SavedProto[] = protos.map(proto => ({
     fileName: proto.fileName,
-    // protoText: proto.proto.protoText,
     filePath: proto.proto.filePath,
     imports: proto.proto.imports,
   }));
@@ -48,7 +46,6 @@ export function storeProtos(protos: ProtoFile[]) {
 /**
  * Get proto list
  */
-// export function getProtos(): string[] | void {
 export function getProtos(): SavedProto[] {
   return EditorStore.get(KEYS.PROTOS, []);
 }
@@ -65,7 +62,6 @@ export function storeTabs(editorTabs: EditorTabs) {
       serviceName: tab.service.serviceName,
       protoPath: tab.service.proto.filePath,
       importPaths: tab.service.proto.imports,
-      // protoText: tab.service.proto.protoText,
       tabKey: tab.tabKey,
     }))
   };
@@ -80,7 +76,6 @@ export interface EditorTabsStorage {
     methodName: string,
     serviceName: string,
     tabKey: string,
-    // protoText: string,
     imports?: PlaceholderFile[]
   }[]
 }

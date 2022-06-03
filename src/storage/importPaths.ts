@@ -1,8 +1,4 @@
-// @ts-ignore
-// import * as Store from "electron-store";
-
 import { Store } from "./Store";
-
 
 const ImportPathsStore = new Store({
   name: "importPaths",

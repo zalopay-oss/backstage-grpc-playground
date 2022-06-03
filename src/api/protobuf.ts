@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-restricted-imports
-import { Root, Service } from 'protobufjs';
-import { ServiceMethodsPayload } from './bloomrpc-mock';
+import { Message, Root, Service } from 'protobufjs';
 import { GrpcObject } from './makeClient';
 import { PlaceholderFile } from './types';
 
@@ -12,6 +10,15 @@ export interface Proto {
   ast: GrpcObject;
   root: Root;
 }
+
+export interface MethodPayload {
+  plain: { [key: string]: any };
+  message: Message;
+}
+
+export type ServiceMethodsPayload = {
+  [name: string]: MethodPayload
+};
 
 export interface SavedProto {
   fileName: string;

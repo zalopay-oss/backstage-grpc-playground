@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import * as React from 'react';
+import React from 'react';
 import { useEffect, useState } from 'react';
 import {
   FileAddOutlined,
@@ -35,7 +35,6 @@ import {
   grpcPlaygroundApiRef,
   EntitySpec,
   GRPCTargetInfo,
-  loadProtos,
   ProtoFile,
   ProtoService,
   SavedProto,
@@ -312,7 +311,7 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
               onEditorRequestChange={(editorRequestInfo) => {
                 storeRequestInfo(editorRequestInfo);
               }}
-              onDelete={(activeKey: string | React.MouseEvent<HTMLElement>) => {
+              onDelete={(activeKey: string | React.MouseEvent<Element> | React.KeyboardEvent<Element>) => {
                 let newActiveKey = "0";
 
                 const index = editorTabs.tabs
@@ -406,43 +405,10 @@ export function App() {
     <ProtoContextProvider>
       <GrpcPlaygroundApplication
         appId={entity?.metadata?.name || DEFAULT_APP_ID}
-        spec={entity?.spec as RawEntitySpec | undefined}
+        spec={entity?.spec as unknown as (RawEntitySpec | undefined)}
       />
     </ProtoContextProvider>
   )
-}
-
-/**
- * Hydrate editor from persisted storage
- * @deprecated - we now get protos from BE plugin with API
- * 
- * @param setProtos
- * @param setEditorTabs
- */
-async function hydrateEditor(setProtos: React.Dispatch<ProtoFile[]>, setEditorTabs: React.Dispatch<EditorTabs>, defaultProto?: SavedProto) {
-  const savedProtos = getProtos();
-
-  if (savedProtos) {
-    const processProtos = [...savedProtos];
-
-    if (!savedProtos.length && defaultProto) {
-      // load default definition
-      processProtos.push(defaultProto);
-    }
-
-    const loadedProtos = loadProtos(processProtos, handleProtoUpload(setProtos, []));
-
-    const savedEditorTabs = getTabs();
-    if (savedEditorTabs) {
-      try {
-        const tabs = loadTabs(savedEditorTabs, loadedProtos)
-
-        setEditorTabs(tabs as EditorTabs)
-      } catch (err) {
-        setEditorTabs({ activeKey: "0", tabs: [] })
-      }
-    }
-  }
 }
 
 /**

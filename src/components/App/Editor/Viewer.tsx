@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-autofocus */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import * as React from 'react';
+import React from 'react';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import AceEditor from 'react-ace';
 import * as Mousetrap from 'mousetrap';

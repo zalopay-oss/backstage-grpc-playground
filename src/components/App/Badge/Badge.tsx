@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import * as React from 'react';
+import React from 'react';
 
 interface BadgeProps {
   type: "protoFile" | "service" | "method"

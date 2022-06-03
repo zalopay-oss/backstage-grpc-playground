@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import * as React from 'react';
+import React from 'react';
 import { CaretDownOutlined, FilePptOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons';
 import { Button, Tooltip, Switch, Modal, Menu, Dropdown, MenuProps } from 'antd';
 import { setInteractive, setProtoVisibility, setGrpcWeb } from './actions';
@@ -100,17 +100,6 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
             <CaretDownOutlined />
           </div>
         </Dropdown>
-        {/* Hide GRPC-web */}
-        {/* <div style={{paddingRight: 10}}>
-          <Switch
-            checkedChildren="WEB &nbsp;"
-            defaultChecked={grpcWebChecked}
-            unCheckedChildren="GRPC"
-            onChange={(checked) => {
-              dispatch(setGrpcWeb(checked));
-            }}
-          />
-        </div> */}
         <div style={{ paddingRight: 10 }}>
           <Switch
             checkedChildren="Interactive"

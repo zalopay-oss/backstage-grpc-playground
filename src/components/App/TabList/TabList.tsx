@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import * as React from 'react';
+import React from 'react';
 import { useEffect } from 'react';
 import { Tabs } from 'antd';
 import * as Mousetrap from 'mousetrap';
@@ -14,7 +14,7 @@ interface TabListProps {
   tabs: TabData[]
   activeKey?: string
   onChange?: (activeKey: string) => void
-  onDelete?: (activeKey: string | React.MouseEvent<HTMLElement>) => void
+  onDelete?: (activeKey: string | React.MouseEvent<Element> | React.KeyboardEvent<Element>) => void
   onEditorRequestChange?: (requestInfo: EditorTabRequest) => void
   onDragEnd: (indexes: { oldIndex: number, newIndex: number }) => void
   environmentList?: EditorEnvironment[],

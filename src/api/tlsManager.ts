@@ -1,16 +1,16 @@
 import { CertFile, Certificate } from "./types";
 
-// TODO
+// TODO implement
 export const importRootCert = (): Certificate | null => {
-  return null;
+  throw new Error('Not implemented');
 }
 
-// TODO
+// TODO implement
 export const importCertChain = (): CertFile | null => {
-  return null
+  throw new Error('Not implemented');
 }
 
-// TODO
+// TODO implement
 export const importPrivateKey = (): CertFile | null => {
-  return null
+  throw new Error('Not implemented');
 }

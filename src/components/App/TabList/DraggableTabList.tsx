@@ -1,5 +1,5 @@
 /* eslint-disable new-cap */
-import * as React from 'react';
+import React from 'react';
 import { SortableContainer, SortableElement } from 'react-sortable-hoc';
 
 interface DraggableItemProps {

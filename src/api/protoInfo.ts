@@ -1,4 +1,3 @@
-// @ts-ignore
 import lodashGet from 'lodash.get';
 import { ProtoService } from './protobuf';
 
@@ -9,19 +8,6 @@ export class ProtoInfo {
   constructor(service: ProtoService, methodName: string) {
     this.service = service;
     this.methodName = methodName;
-
-    // const serviceDefinition = this.serviceDef();
-    // const methodDef = serviceDefinition.methods[this.methodName];
-
-    // const { requestType, responseType } = methodDef;
-
-    // if (!methodDef.resolvedRequestType) {
-    //   methodDef.resolvedRequestType = this.service.proto.root.lookupType(responseType);
-    // }
-    
-    // if (!methodDef.resolvedResponseType) {
-    //   methodDef.resolvedResponseType = this.service.proto.root.lookupType(requestType);
-    // }
   }
 
   client(): any {
@@ -29,7 +15,6 @@ export class ProtoInfo {
   }
 
   serviceDef() {
-    // return this.service.proto.root.lookupService(this.service.serviceName);
     return this.service.definition;
   }
 

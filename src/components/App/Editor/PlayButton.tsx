@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable react-hooks/exhaustive-deps */
-import * as React from 'react';
+import React from 'react';
 import { notification } from 'antd';
 import * as Mousetrap from 'mousetrap'
 import 'mousetrap/plugins/global-bind/mousetrap-global-bind';
+import { PauseCircleFilled, PlayCircleFilled } from '@ant-design/icons';
+import { useApi } from '@backstage/core-plugin-api';
+
 import {
   setCall,
   setIsLoading,
@@ -13,10 +16,9 @@ import {
   addResponseStreamData, setStreamCommitted
 } from './actions';
 import { ControlsStateProps } from './Controls';
-import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, grpcPlaygroundApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
-import { useApi } from '@backstage/core-plugin-api';
+import { GRPCServerRequest, GRPCEventType, ResponseMetaInformation, grpcPlaygroundApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
+
 import { ProtoContextType, useProtoContext } from '../ProtoProvider';
-import { PauseCircleFilled, PlayCircleFilled } from '@ant-design/icons';
 
 type MakeRequestPayload = ControlsStateProps & {
   protoContext: ProtoContextType,
@@ -38,30 +40,18 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, pro
   // Play button action:
   dispatch(setIsLoading(true));
 
-  let grpcRequest: GRPCEventEmitter;
-
   // TODO: handle server request
   // eslint-disable-next-line no-constant-condition
-  if (false && state.grpcWeb) {
-    grpcRequest = new GRPCWebRequest({
-      url: state.url,
-      inputs: state.data,
-      metadata: state.metadata,
-      protoInfo: protoInfo!,
-      interactive: state.interactive,
-      tlsCertificate: state.tlsCertificate,
-    })
-  } else {
-    grpcRequest = new GRPCServerRequest({
-      url: state.url,
-      inputs: state.data,
-      metadata: state.metadata,
-      protoInfo,
-      interactive: state.interactive,
-      tlsCertificate: state.tlsCertificate,
-      sendServerRequest,
-    });
-  }
+
+  const grpcRequest = new GRPCServerRequest({
+    url: state.url,
+    inputs: state.data,
+    metadata: state.metadata,
+    protoInfo,
+    interactive: state.interactive,
+    tlsCertificate: state.tlsCertificate,
+    sendServerRequest,
+  });
 
   dispatch(setCall(grpcRequest));
 

@@ -1,9 +1,7 @@
-import * as React from 'react';
+import React from 'react';
 import AceEditor from 'react-ace';
 import { Drawer } from 'antd';
 import { ProtoInfo } from '../../../api';
-// import { PlainApiDefinitionWidget } from '@backstage/plugin-api-docs';
-
 
 interface ProtoFileViewerProps {
   protoInfo: ProtoInfo
@@ -46,16 +44,10 @@ export function ProtoFileViewer({ protoInfo, visible, onClose }: ProtoFileViewer
         setOptions={{
           useWorker: true,
           displayIndentGuides: false,
-          // showLineNumbers: false,
-          // highlightGutterLine: false,
           fixedWidthGutter: true,
           tabSize: 1,
         }}
       />
-      {/* <PlainApiDefinitionWidget
-        definition={protoInfo.service.proto.protoText}
-        language="protobuf"
-      /> */}
     </Drawer>
   );
 }

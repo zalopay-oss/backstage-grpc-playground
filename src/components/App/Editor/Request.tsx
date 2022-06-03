@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import AceEditor, { Command } from 'react-ace';
 import * as Mousetrap from 'mousetrap'
 import 'mousetrap/plugins/global-bind/mousetrap-global-bind';

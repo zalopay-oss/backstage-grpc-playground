@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import * as React from 'react';
+import React from 'react';
 import { Tabs } from 'antd';
 import { Viewer } from './Viewer';
 import { EditorResponse } from "./Editor";
-import logo from './logo.png';
 
 interface ResponseProps {
   streamResponse: EditorResponse[]
@@ -28,11 +27,6 @@ export function Response({ response, streamResponse }: ResponseProps) {
               emptyContent={(
                 <div style={{ position: "relative", height: "325px" }}>
                   <div style={styles.introContainer}>
-                    <img
-                      src={logo}
-                      alt='logo'
-                      style={{ opacity: 0.1, pointerEvents: "none", userSelect: "none" }}
-                    />
                     <h1 style={styles.introTitle}>Hit the play button to get a response here</h1>
                   </div>
                 </div>

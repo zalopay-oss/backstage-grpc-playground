@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import {Col, Input, Row} from "antd";
 import {useState} from "react";
 

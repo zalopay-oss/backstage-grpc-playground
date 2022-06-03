@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import * as React from 'react';
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { CloseOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { Button, Input, Radio, Table } from "antd";
@@ -11,172 +11,174 @@ import { getTLSList, storeTLSList } from "../../../storage";
 import { importPrivateKey, importCertChain, importRootCert, Certificate } from '../../../api';
 
 interface TLSManagerProps {
-    selected?: Certificate
-    onSelected?: (value?: Certificate) => void
+  selected?: Certificate
+  onSelected?: (value?: Certificate) => void
 }
 
 export function TLSManager({ selected, onSelected }: TLSManagerProps) {
-    const [certs, setStateCerts] = useState<Certificate[]>([]);
+  const [certs, setStateCerts] = useState<Certificate[]>([]);
 
-    function setCerts(newCerts: Certificate[]) {
-      setStateCerts(newCerts);
-      storeTLSList(newCerts);
-    }
+  function setCerts(newCerts: Certificate[]) {
+    setStateCerts(newCerts);
+    storeTLSList(newCerts);
+  }
 
-    useEffect(() => {
-      setStateCerts(getTLSList());
-    }, []);
+  useEffect(() => {
+    setStateCerts(getTLSList());
+  }, []);
 
-    return <>
-    <div>
+  return (
+    <>
+      <div>
         <Button
-            type="primary"
-            onClick={async () => {
-              const cert = await handleImportRootCert(certs, setCerts);
+          type="primary"
+          onClick={async () => {
+            const cert = await handleImportRootCert(certs, setCerts);
 
-              if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
-                onSelected?.(cert);
-              }
-            }}
-            style={{
-                borderRadius: 0,
-                width: "100%"
-            }}
+            if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
+              onSelected?.(cert);
+            }
+          }}
+          style={{
+            borderRadius: 0,
+            width: "100%"
+          }}
         >
           <PlusCircleOutlined /> Add Root Certificate
         </Button>
-    </div>
-    <Table
+      </div>
+      <Table
         dataSource={certs}
         pagination={false}
         rowKey={(certificate: Certificate) => certificate.rootCert.filePath}
-    >
+      >
         <Table.Column
-            title={(
-                <Radio
-                    name="tls"
-                    value=""
-                    checked={!selected}
-                    onChange={() => onSelected && onSelected()}
-                />
-            )}
-            key="radio"
-            render={(text, certificate: Certificate) => (
-                <div>
-                    <Radio
-                        name="tls"
-                        value={certificate.rootCert.filePath}
-                        checked={selected && certificate.rootCert.filePath === selected.rootCert.filePath}
-                        onChange={() => onSelected && onSelected(certificate)}
-                    />
-                </div>
-            )}
+          title={(
+            <Radio
+              name="tls"
+              value=""
+              checked={!selected}
+              onChange={() => onSelected && onSelected()}
+            />
+          )}
+          key="radio"
+          render={(text, certificate: Certificate) => (
+            <div>
+              <Radio
+                name="tls"
+                value={certificate.rootCert.filePath}
+                checked={selected && certificate.rootCert.filePath === selected.rootCert.filePath}
+                onChange={() => onSelected && onSelected(certificate)}
+              />
+            </div>
+          )}
         />
         <Table.Column
-            title="Root Certificate"
-            key="rootCert"
-            render={(text, record: Certificate) => (
-                <div>
-                    <span title={record.rootCert.filePath}>{record.rootCert.fileName}</span>
-                </div>
-            )}
+          title="Root Certificate"
+          key="rootCert"
+          render={(text, record: Certificate) => (
+            <div>
+              <span title={record.rootCert.filePath}>{record.rootCert.fileName}</span>
+            </div>
+          )}
         />
         <Table.Column
-            title="Private Key"
-            key="privateKey"
-            render={(text, certificate: Certificate) => {
-                const {privateKey} = certificate;
-                if (certificate.useServerCertificate === true) {
-                  return <div>-</div>
-                }
-                return (
-                    <>
-                        {privateKey ? (
-                            <span>{privateKey.fileName}</span>
-                        ) : (
-                            <a onClick={async (e) => {
-                              e.preventDefault();
-                              const cert = await handleImportPrivateKey(certificate, certs, setCerts);
-                              if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
-                                onSelected?.(cert);
-                              }
-                            }}>Import Key</a>
-                        )}
-                    </>
-                )
-            }}
+          title="Private Key"
+          key="privateKey"
+          render={(text, certificate: Certificate) => {
+            const { privateKey } = certificate;
+            if (certificate.useServerCertificate === true) {
+              return <div>-</div>
+            }
+            return (
+              <>
+                {privateKey ? (
+                  <span>{privateKey.fileName}</span>
+                ) : (
+                  <a onClick={async (e) => {
+                    e.preventDefault();
+                    const cert = await handleImportPrivateKey(certificate, certs, setCerts);
+                    if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
+                      onSelected?.(cert);
+                    }
+                  }}>Import Key</a>
+                )}
+              </>
+            )
+          }}
         />
         <Table.Column
-            title="Cert Chain"
-            dataIndex="certChain"
-            key="certChain"
-            render={(text, certificate: Certificate) => {
-                if (certificate.useServerCertificate === true) {
-                  return <div>-</div>
-                }
-                return (
-                    <>
-                        {certificate.certChain ? (
-                            <span title={certificate.certChain.filePath}>
-                              {certificate.certChain.fileName}
-                            </span>
-                        ) : (
-                            <a onClick={async (e) => {
-                              e.preventDefault();
-                              const cert = await handleImportCertChain(certificate, certs, setCerts);
-                              if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
-                                onSelected?.(cert);
-                              }
-                            }}>Import Cert Chain</a>
-                        )}
-                    </>
-                )
-            }}
+          title="Cert Chain"
+          dataIndex="certChain"
+          key="certChain"
+          render={(text, certificate: Certificate) => {
+            if (certificate.useServerCertificate === true) {
+              return <div>-</div>
+            }
+            return (
+              <>
+                {certificate.certChain ? (
+                  <span title={certificate.certChain.filePath}>
+                    {certificate.certChain.fileName}
+                  </span>
+                ) : (
+                  <a onClick={async (e) => {
+                    e.preventDefault();
+                    const cert = await handleImportCertChain(certificate, certs, setCerts);
+                    if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
+                      onSelected?.(cert);
+                    }
+                  }}>Import Cert Chain</a>
+                )}
+              </>
+            )
+          }}
         />
         <Table.Column
           key="sslTarget"
           render={(text, certificate: Certificate) => {
-            if(certificate.useServerCertificate === true) {
+            if (certificate.useServerCertificate === true) {
               return <div />
             }
             return (
-                <Input placeholder="ssl target host" defaultValue={certificate.sslTargetHost} onChange={(e) => {
-                  const cert = setSslTargetHost(
-                      e.target.value,
-                      certificate,
-                      certs,
-                      setCerts
-                  );
+              <Input placeholder="ssl target host" defaultValue={certificate.sslTargetHost} onChange={(e) => {
+                const cert = setSslTargetHost(
+                  e.target.value,
+                  certificate,
+                  certs,
+                  setCerts
+                );
 
-                  if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
-                    onSelected?.(cert);
-                  }
-                }}/>
+                if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
+                  onSelected?.(cert);
+                }
+              }} />
             )
           }}
         />
         <Table.Column
           key="delete"
           render={(text, certificate: Certificate) => {
-            if(certificate.useServerCertificate === true) {
+            if (certificate.useServerCertificate === true) {
               return <div />
             }
             return (
-                <CloseOutlined
-                    onClick={() => {
-                      if (selected && selected.rootCert.filePath === certificate.rootCert.filePath) {
-                        onSelected?.();
-                      }
-                      deleteCertificateEntry(certificate, certs, setCerts);
-                    }}
-                    style={{
-                      cursor: "pointer",
-                    }} />
+              <CloseOutlined
+                onClick={() => {
+                  if (selected && selected.rootCert.filePath === certificate.rootCert.filePath) {
+                    onSelected?.();
+                  }
+                  deleteCertificateEntry(certificate, certs, setCerts);
+                }}
+                style={{
+                  cursor: "pointer",
+                }} />
             );
           }}
         />
-    </Table>
-    </>;
+      </Table>
+    </>
+  );
 }
 
 async function handleImportRootCert(certs: Certificate[], setCerts: React.Dispatch<Certificate[]>): Promise<Certificate | void> {
@@ -186,7 +188,7 @@ async function handleImportRootCert(certs: Certificate[], setCerts: React.Dispat
     if (!certificate) return;
 
     const newCerts = certs
-        .filter((cert) => cert.rootCert.filePath !== certificate.rootCert.filePath);
+      .filter((cert) => cert.rootCert.filePath !== certificate.rootCert.filePath);
 
     newCerts.push(certificate);
 
@@ -199,9 +201,9 @@ async function handleImportRootCert(certs: Certificate[], setCerts: React.Dispat
 }
 
 async function handleImportPrivateKey(
-    certificate: Certificate,
-    certs: Certificate[],
-    setCerts: React.Dispatch<Certificate[]>
+  certificate: Certificate,
+  certs: Certificate[],
+  setCerts: React.Dispatch<Certificate[]>
 ): Promise<Certificate | void> {
   try {
     const pk = await importPrivateKey();
@@ -221,9 +223,9 @@ async function handleImportPrivateKey(
 }
 
 async function handleImportCertChain(
-    certificate: Certificate,
-    certs: Certificate[],
-    setCerts: React.Dispatch<Certificate[]>
+  certificate: Certificate,
+  certs: Certificate[],
+  setCerts: React.Dispatch<Certificate[]>
 ): Promise<Certificate | void> {
   try {
     const chain = await importCertChain();
@@ -256,10 +258,10 @@ function deleteCertificateEntry(
 }
 
 function setSslTargetHost(
-    value: string,
-    certificate: Certificate,
-    certs: Certificate[],
-    setCerts: React.Dispatch<Certificate[]>
+  value: string,
+  certificate: Certificate,
+  certs: Certificate[],
+  setCerts: React.Dispatch<Certificate[]>
 ): Certificate {
   const certIndex = certs.findIndex((cert) => cert.rootCert.filePath === certificate.rootCert.filePath);
   certificate.sslTargetHost = value;

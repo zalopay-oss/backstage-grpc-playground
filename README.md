@@ -58,4 +58,5 @@ E.g: In your backstage project root
 
 ## Acknowledgements
 
-- Thanks to the awesome [BloomRPC Application](https://github.com/bloomrpc/bloomrpc)
+- Thanks to [Backstage Team](https://github.com/backstage/backstage) for creating an incredable framework
+- Thanks to the authors of the awesome [BloomRPC Application](https://github.com/bloomrpc/bloomrpc)

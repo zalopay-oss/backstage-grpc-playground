@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/no-autofocus */
-import * as React from 'react';
+import React from 'react';
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { Input, Table, Tooltip } from "antd";
 import { useState } from "react";

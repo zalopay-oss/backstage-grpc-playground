@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import * as React from 'react';
+import React from 'react';
 import { useEffect, useReducer } from 'react';
 import {
   actions,
@@ -188,6 +187,7 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
       dispatch(setMetadata(initialRequest.metadata));
       dispatch(setTSLCertificate(initialRequest.tlsCertificate));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onClickExport = async () => {

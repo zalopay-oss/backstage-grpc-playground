@@ -38,26 +38,13 @@ export interface SendRequestPayload {
     inputs: Object;
     metadata: Object;
   };
-  // stream?: ReadableStream;
   methodName: string;
   serviceName: string;
   url: string;
   interactive?: boolean;
 }
 
-export interface SendRequestStreamPayload {
-  requestId: string;
-  proto: string;
-  stream: ReadableStream;
-  methodName: string;
-  serviceName: string;
-  url: string;
-  interactive?: boolean;
-}
-
-export interface SendRequestResponse extends Response {
-
-}
+export interface SendRequestResponse extends Response { }
 
 export const grpcPlaygroundApiRef = createApiRef<GrpcPlaygroundApi>({
   id: 'plugin.grpc-playground.service',
@@ -75,14 +62,9 @@ export interface SendServerRequest {
   (payload: SendRequestPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse>
 }
 
-export interface SendServerRequestStream {
-  (payload: SendRequestStreamPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse>
-}
-
 export interface GrpcPlaygroundApi {
   uploadProto: UploadProtoRequest;
   sendServerRequest: SendServerRequest;
-  sendServerRequestStream: SendServerRequestStream;
   getProto: GetProtoRequest;
   setEntityName: (entity: string) => void;
 }

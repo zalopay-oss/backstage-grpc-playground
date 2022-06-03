@@ -1,5 +1,3 @@
-// @ts-ignore
-// import * as Store from "electron-store";
 import { Certificate } from "../api";
 import { Store } from "./Store";
 

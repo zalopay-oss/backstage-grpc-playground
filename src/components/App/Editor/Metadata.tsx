@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import * as React from 'react';
+import React from 'react';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import AceEditor from 'react-ace';
 import Resizable from 're-resizable';

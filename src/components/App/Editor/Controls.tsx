@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
-import * as React from 'react';
+import React from 'react';
 import { EditorAction, EditorState } from './Editor';
 import { PlayButton } from './PlayButton';
 import { CheckOutlined, DoubleRightOutlined } from '@ant-design/icons';

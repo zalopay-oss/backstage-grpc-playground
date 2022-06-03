@@ -1,7 +1,11 @@
 import { ConfigApi, DiscoveryApi, FetchApi, IdentityApi } from "@backstage/core-plugin-api";
 import { ScmAuthApi } from "@backstage/integration-react";
 
-import { GrpcPlaygroundApi, GRPCPlaygroundRequestOptions, GetProtoPayload, SendRequestPayload, SendRequestResponse, SendRequestStreamPayload, UploadProtoPayload, UploadProtoResponse } from "./BloomRPCApi";
+import {
+  GrpcPlaygroundApi, GRPCPlaygroundRequestOptions,
+  GetProtoPayload, SendRequestPayload, SendRequestResponse,
+  UploadProtoPayload, UploadProtoResponse
+} from "./GrpcPlaygroundApi";
 
 export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
   private readonly discoveryApi: DiscoveryApi;
@@ -102,25 +106,6 @@ export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
         },
         method: 'POST',
         body: JSON.stringify(payload),
-      },
-    )
-
-    return res;
-  }
-
-  async sendServerRequestStream(payload: SendRequestStreamPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse> {
-    const { token } = await this.identityApi.getCredentials();
-
-    const res = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/send-request-stream/${this.entityName}`,
-      {
-        headers: {
-          'Content-Type': 'text/plain',
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        method: 'POST',
-        body: payload.stream,
-        ...{ allowHTTP1ForStreamingUpload: true } as any,
       },
     )
 
