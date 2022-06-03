@@ -1,5 +1,5 @@
-export * from './BloomRPCApi';
-export * from './BloomRPCApiClient';
+export * from './GrpcPlaygroundApi';
+export * from './GrpcPlaygroundApiClient';
 export * from './importProtos';
 export * from './bloomrpc-mock';
 export * from './protobuf';

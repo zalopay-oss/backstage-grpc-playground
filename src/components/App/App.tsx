@@ -32,7 +32,7 @@ import { EditorEnvironment } from "./Editor";
 import { getEnvironments as getEnvFromStorage, saveEnvironments } from "../../storage/environments";
 
 import {
-  bloomRPCApiRef,
+  grpcPlaygroundApiRef,
   EntitySpec,
   GRPCTargetInfo,
   loadProtos,
@@ -62,14 +62,14 @@ function combineTargetToUrl(target: GRPCTargetInfo): string {
   return `${target.host}:${target.port}`;
 }
 
-interface BloomRPCApplicationProps {
+interface GrpcPlaygroundApplicationProps {
   appId: string;
   spec?: RawEntitySpec;
 }
 
 const DEFAULT_APP_ID = 'standalone';
 
-const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }) => {
+const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, spec }) => {
   const [isLoading, setLoading] = useState(false);
   const [editorTabs, setEditorTabs] = useState<EditorTabs>({
     activeKey: "0",
@@ -86,7 +86,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
     ignoreCurrentMissingImport,
   } = useProtoContext()!;
 
-  const bloomRPCApi = useApi(bloomRPCApiRef);
+  const grpcPlaygroundApi = useApi(grpcPlaygroundApiRef);
 
   const [environments, setEnvironments] = useState<EditorEnvironment[]>(getEnvironments());
 
@@ -97,8 +97,8 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 
   useEffect(() => {
     Store.setGlobalKey(appId);
-    bloomRPCApi.setEntityName(appId);
-  }, [appId, bloomRPCApi])
+    grpcPlaygroundApi.setEntityName(appId);
+  }, [appId, grpcPlaygroundApi])
 
   useEffect(() => {
     // Preload editor with stored data.
@@ -182,7 +182,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
       entitySpec.files = processProtos;
     }
 
-    bloomRPCApi.getProto({ entitySpec })
+    grpcPlaygroundApi.getProto({ entitySpec })
       .then(res => {
         handleProtoResult(res);
 
@@ -252,7 +252,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
       });
     }
 
-    const res: UploadProtoResponse = await bloomRPCApi.uploadProto({
+    const res: UploadProtoResponse = await grpcPlaygroundApi.uploadProto({
       files: uploadFiles,
       importFor: importFor,
       fileMappings,
@@ -392,7 +392,7 @@ const BloomRPCApplication: React.FC<BloomRPCApplicationProps> = ({ appId, spec }
 export function StandaloneApp() {
   return (
     <ProtoContextProvider>
-      <BloomRPCApplication
+      <GrpcPlaygroundApplication
         appId={DEFAULT_APP_ID}
       />
     </ProtoContextProvider>
@@ -404,7 +404,7 @@ export function App() {
 
   return (
     <ProtoContextProvider>
-      <BloomRPCApplication
+      <GrpcPlaygroundApplication
         appId={entity?.metadata?.name || DEFAULT_APP_ID}
         spec={entity?.spec as RawEntitySpec | undefined}
       />

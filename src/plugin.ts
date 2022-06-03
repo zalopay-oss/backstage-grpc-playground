@@ -15,18 +15,18 @@
  */
 import { configApiRef, createApiFactory, createComponentExtension, createPlugin, createRoutableExtension, discoveryApiRef, identityApiRef } from '@backstage/core-plugin-api';
 import { scmAuthApiRef } from '@backstage/integration-react';
-import { bloomRPCApiRef, BloomRPCApiClient } from './api';
+import { grpcPlaygroundApiRef, GrpcPlaygroundApiClient } from './api';
 
 import { rootRouteRef } from './routes';
 
-export const bloomrpcPlugin = createPlugin({
-  id: 'bloomrpc',
+export const grpcPlaygroundPlugin = createPlugin({
+  id: 'grpc-playground',
   routes: {
     root: rootRouteRef,
   },
   apis: [
     createApiFactory({
-      api: bloomRPCApiRef,
+      api: grpcPlaygroundApiRef,
       deps: {
         discoveryApi: discoveryApiRef,
         scmAuthApi: scmAuthApiRef,
@@ -39,7 +39,7 @@ export const bloomrpcPlugin = createPlugin({
         identityApi,
         configApi,
       }) =>
-        new BloomRPCApiClient({
+        new GrpcPlaygroundApiClient({
           discoveryApi,
           scmAuthApi,
           identityApi,
@@ -49,18 +49,18 @@ export const bloomrpcPlugin = createPlugin({
   ]
 });
 
-export const BloomrpcPage = bloomrpcPlugin.provide(
+export const GrpcPlaygroundPage = grpcPlaygroundPlugin.provide(
   createRoutableExtension({
-    name: 'BloomRPC Plugin',
+    name: 'GRPC Playground Page',
     component: () =>
       import('./components/App').then(m => m.StandaloneApp),
     mountPoint: rootRouteRef,
   }),
 );
 
-export const BloomrpcComponent = bloomrpcPlugin.provide(
+export const GrpcPlaygroundComponent = grpcPlaygroundPlugin.provide(
   createComponentExtension({
-    name: 'BloomRPC Plugin',
+    name: 'GRPC Playground Plugin',
     component: {
       lazy: () => import('./components/App').then(m => m.App)
     }

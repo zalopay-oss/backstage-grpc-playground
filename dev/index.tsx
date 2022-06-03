@@ -15,13 +15,13 @@
  */
 import React from 'react';
 import { createDevApp } from '@backstage/dev-utils';
-import { bloomrpcPlugin, BloomrpcPage } from '../src/plugin';
+import { grpcPlaygroundPlugin, GrpcPlaygroundPage } from '../src/plugin';
 
 createDevApp()
-  .registerPlugin(bloomrpcPlugin)
+  .registerPlugin(grpcPlaygroundPlugin)
   .addPage({
-    element: <BloomrpcPage />,
+    element: <GrpcPlaygroundPage />,
     title: 'Root Page',
-    path: '/bloomrpc'
+    path: '/grpc-playground'
   })
   .render();

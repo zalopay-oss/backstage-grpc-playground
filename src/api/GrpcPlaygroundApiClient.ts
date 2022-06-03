@@ -1,9 +1,9 @@
 import { ConfigApi, DiscoveryApi, FetchApi, IdentityApi } from "@backstage/core-plugin-api";
 import { ScmAuthApi } from "@backstage/integration-react";
 
-import { BloomRPCApi, BloomRPCRequestOptions, GetProtoPayload, SendRequestPayload, SendRequestResponse, SendRequestStreamPayload, UploadProtoPayload, UploadProtoResponse } from "./BloomRPCApi";
+import { GrpcPlaygroundApi, GRPCPlaygroundRequestOptions, GetProtoPayload, SendRequestPayload, SendRequestResponse, SendRequestStreamPayload, UploadProtoPayload, UploadProtoResponse } from "./BloomRPCApi";
 
-export class BloomRPCApiClient implements BloomRPCApi {
+export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
   private readonly discoveryApi: DiscoveryApi;
   private readonly identityApi: IdentityApi;
   private readonly scmAuthApi: ScmAuthApi;
@@ -30,11 +30,11 @@ export class BloomRPCApiClient implements BloomRPCApi {
     this.entityName = entityName;
   }
 
-  async getProto(payload: GetProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse> {
+  async getProto(payload: GetProtoPayload, options?: GRPCPlaygroundRequestOptions): Promise<UploadProtoResponse> {
     const { token } = await this.identityApi.getCredentials();
 
     const res = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/proto-info/${this.entityName}`,
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/proto-info/${this.entityName}`,
       {
         ...(options?.fetchOptions || {}),
         headers: {
@@ -51,7 +51,7 @@ export class BloomRPCApiClient implements BloomRPCApi {
     return data;
   }
 
-  async uploadProto(payload: UploadProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse> {
+  async uploadProto(payload: UploadProtoPayload, options?: GRPCPlaygroundRequestOptions): Promise<UploadProtoResponse> {
     const { token } = await this.identityApi.getCredentials();
 
     const formData = new FormData();
@@ -72,7 +72,7 @@ export class BloomRPCApiClient implements BloomRPCApi {
     }
 
     const res = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/upload-proto/${this.entityName}`,
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/upload-proto/${this.entityName}`,
       {
         headers: {
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -87,13 +87,13 @@ export class BloomRPCApiClient implements BloomRPCApi {
     return data;
   }
 
-  async sendServerRequest(payload: SendRequestPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
+  async sendServerRequest(payload: SendRequestPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse> {
     const { token } = await this.identityApi.getCredentials();
 
     const fetch = options?.fetcher || this.fetchApi.fetch;
 
     const res = await fetch(
-      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request/${this.entityName}`,
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/send-request/${this.entityName}`,
       {
         ...(options?.fetchOptions || {}),
         headers: {
@@ -108,11 +108,11 @@ export class BloomRPCApiClient implements BloomRPCApi {
     return res;
   }
 
-  async sendServerRequestStream(payload: SendRequestStreamPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse> {
+  async sendServerRequestStream(payload: SendRequestStreamPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse> {
     const { token } = await this.identityApi.getCredentials();
 
     const res = await this.fetchApi.fetch(
-      `${await this.discoveryApi.getBaseUrl('bloomrpc')}/send-request-stream/${this.entityName}`,
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/send-request-stream/${this.entityName}`,
       {
         headers: {
           'Content-Type': 'text/plain',

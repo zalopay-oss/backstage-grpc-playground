@@ -7,7 +7,7 @@ import { EntitySpec, LoadProtoStatus, FileWithImports, PlaceholderFile } from ".
  *
  * @public
  */
-export interface BloomRPCRequestOptions {
+export interface GRPCPlaygroundRequestOptions {
   token?: string;
   fetcher?: typeof fetch;
   fetchOptions?: any;
@@ -59,28 +59,27 @@ export interface SendRequestResponse extends Response {
 
 }
 
-export const bloomRPCApiRef = createApiRef<BloomRPCApi>({
-  id: 'plugin.bloomrpc.service',
+export const grpcPlaygroundApiRef = createApiRef<GrpcPlaygroundApi>({
+  id: 'plugin.grpc-playground.service',
 });
 
 export interface GetProtoRequest {
-  (payload: GetProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse>
+  (payload: GetProtoPayload, options?: GRPCPlaygroundRequestOptions): Promise<UploadProtoResponse>
 }
 
 export interface UploadProtoRequest {
-  (payload: UploadProtoPayload, options?: BloomRPCRequestOptions): Promise<UploadProtoResponse>
+  (payload: UploadProtoPayload, options?: GRPCPlaygroundRequestOptions): Promise<UploadProtoResponse>
 }
 
 export interface SendServerRequest {
-  (payload: SendRequestPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse>
-  // (payload: SendRequestStreamPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse>
+  (payload: SendRequestPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse>
 }
 
 export interface SendServerRequestStream {
-  (payload: SendRequestStreamPayload, options?: BloomRPCRequestOptions): Promise<SendRequestResponse>
+  (payload: SendRequestStreamPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse>
 }
 
-export interface BloomRPCApi {
+export interface GrpcPlaygroundApi {
   uploadProto: UploadProtoRequest;
   sendServerRequest: SendServerRequest;
   sendServerRequestStream: SendServerRequestStream;

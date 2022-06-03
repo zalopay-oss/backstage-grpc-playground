@@ -13,7 +13,7 @@ import {
   addResponseStreamData, setStreamCommitted
 } from './actions';
 import { ControlsStateProps } from './Controls';
-import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, bloomRPCApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
+import { GRPCServerRequest, GRPCWebRequest, GRPCEventEmitter, GRPCEventType, ResponseMetaInformation, grpcPlaygroundApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
 import { useApi } from '@backstage/core-plugin-api';
 import { ProtoContextType, useProtoContext } from '../ProtoProvider';
 import { PauseCircleFilled, PlayCircleFilled } from '@ant-design/icons';
@@ -141,13 +141,8 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, pro
 };
 
 export function PlayButton({ dispatch, state, protoInfo, active }: ControlsStateProps) {
-  const bloomRPCApi = useApi(bloomRPCApiRef);
-
-  // const sendServerRequest = React.useMemo(() =>
-  //   state.interactive ?
-  //     bloomRPCApi.sendServerRequestStream.bind(bloomRPCApi) :
-  //     bloomRPCApi.sendServerRequest.bind(bloomRPCApi), [state.interactive]);
-  const sendServerRequest = bloomRPCApi.sendServerRequest.bind(bloomRPCApi);
+  const grpcApi = useApi(grpcPlaygroundApiRef);
+  const sendServerRequest = grpcApi.sendServerRequest.bind(grpcApi);
   const protoContext = useProtoContext()!;
 
   React.useEffect(() => {

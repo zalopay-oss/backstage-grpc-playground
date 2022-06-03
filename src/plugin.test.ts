@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bloomrpcPlugin } from './plugin';
+import { grpcPlaygroundPlugin } from './plugin';
 
-describe('bloomrpc', () => {
+describe('grpc-playground plugin', () => {
   it('should export plugin', () => {
-    expect(bloomrpcPlugin).toBeDefined();
+    expect(grpcPlaygroundPlugin).toBeDefined();
   });
 });

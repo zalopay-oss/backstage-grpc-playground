@@ -12,7 +12,7 @@ import {
   MethodDescriptor,
   MethodType,
 } from 'grpc-web';
-import { SendRequestPayload, SendServerRequest, UploadProtoResponse } from "./BloomRPCApi";
+import { SendRequestPayload, SendServerRequest, UploadProtoResponse } from "./GrpcPlaygroundApi";
 import { v4 as uuid } from 'uuid';
 import { fetchEventSource, FetchEventSourceInit, EventStreamContentType } from '@microsoft/fetch-event-source';
 
