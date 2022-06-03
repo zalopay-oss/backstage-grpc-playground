@@ -115,15 +115,20 @@ const routes = (
 
 ## Examples
 
+#### Yaml file definition
+
+See [yaml-definition](examples/yaml-definition/README.md)
+
 #### Unary
 
-See full [yaml file](examples/yaml-definition/unary.yaml)
+See [example](examples/unary/README.md)
 
 #### Stream
 
-See full [yaml file](examples/yaml-definition/stream.yaml)
+See [example](examples/stream/README.md)
 
 ## Acknowledgements
 
 - Thanks to [Backstage Team](https://github.com/backstage/backstage) for creating an incredable framework
 - Thanks to the authors of the awesome [BloomRPC Application](https://github.com/bloomrpc/bloomrpc)
+- Feel free to [submit new issues](https://github.com/zalopay-oss/backstage-grpc-playground/issues/new)
