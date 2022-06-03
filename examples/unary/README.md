@@ -7,6 +7,12 @@ In this example we will use [this demo server from GRPC team](https://github.com
 Steps to test in your backstage application:
 
 - Install [our backstage-grpc-playground-backend plugin](https://github.com/zalopay-oss/backstage-grpc-playground-backend)
+
 - Navigate to `/catalog-import`
+
 - Import [examples/yaml-definition/unary.yaml](https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/yaml-definition/unary.yaml)
+![import step 1](import1.png)
+![import step 2](import2.png)
+![import step 3](import3.png)
+
 - Start gRPC server and make calls
