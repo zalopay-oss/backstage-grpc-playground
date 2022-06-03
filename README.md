@@ -1,26 +1,27 @@
 # backstage-grpc-playground
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Project Level](https://img.shields.io/badge/level-experiment-yellowgreen) [![version](https://img.shields.io/badge/repo%20status-active-brightgreen)](https://github.com/zalopay-oss/backstage-grpc-playground) [![version](https://img.shields.io/badge/contributors-2-blueviolet)](https://github.com/zalopay-oss/backstage-grpc-playground/graphs/contributors) [![version](https://img.shields.io/badge/open%20issues-0-red)](https://github.com/zalopay-oss/backstage-grpc-playground/issues)
+![GitHub](https://img.shields.io/github/license/zalopay-oss/backstage-grpc-playground) ![Project Level](https://img.shields.io/badge/level-beta-yellowgreen) ![GitHub issues](https://img.shields.io/github/issues/zalopay-oss/backstage-grpc-playground) ![GitHub contributors](https://img.shields.io/github/contributors-anon/zalopay-oss/backstage-grpc-playground?color=blue) ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/zalopay-oss/backstage-grpc-playground)
 
 <!-- TOC -->
 - [**Overview**](#overview)
 - [**Requirements**](#requirements)
 - [**Methods supported**](#methods-supported)
+- [**Not supported**](#not-supported-yet)
 - [**Install**](#install)
-- [**Usage**](#Usage)
+- [**Usage**](#usage)
+- [**Compare to BloomRPC**](#compare-to-bloomrpc)
 - [**Examples**](#examples)
-- [**Additional compared to BloomRPC**](#compare-to-bloomrpc)
 - [**Acknowledgements**](#acknowledgements)
 
 ## Overview
 
-**backstage-grpc-playground** is a [backstage](https://backstage.io) plugin ported from [BloomRPC](https://github.com/bloomrpc/bloomrpc) which is an Electron application.
+**backstage-grpc-playground** is a [backstage](https://backstage.io) plugin ported from [BloomRPC](https://github.com/bloomrpc/bloomrpc) which is an Electron application. We modified some of the original code to make this compatible with Backstage entity. See [Compare to BloomRPC](#compare-to-bloomrpc)
 
 This repo contains React frontend plugin. For the backend plugin, please checkout [backstage-grpc-playground-backend](https://github.com/zalopay-oss/backstage-grpc-playground-backend.git)
 
 ## Requirements
 
-- Backstage > 1.1.0
+- Backstage ^1.1.0
 - Node.JS 14 | 16
 
 ## Methods supported
@@ -28,6 +29,13 @@ This repo contains React frontend plugin. For the backend plugin, please checkou
 - Unary
 - Client streaming
 - Server streaming
+
+## Not supported (yet)
+
+We are currently not supporting
+
+- SSL call [See issue](https://github.com/zalopay-oss/backstage-grpc-playground/issues/1)
+- Load proto from reflection. [See issue](https://github.com/zalopay-oss/backstage-grpc-playground/issues/2)
 
 ## Install
 
@@ -41,20 +49,79 @@ E.g: In your backstage project root
 
 ## Usage
 
+#### Customize ApiDoc to use **backstage-grpc-playground** for `grpc` type
+
+```typescript
+// packages/app/src/apis.ts
+import { GrpcPlaygroundComponent } from 'backstage-grpc-playground';
+
+// your code
+// ...
+
+export const apis: AnyApiFactory[] = [
+  // other apis 
+  // ...
+  
+  createApiFactory({
+    api: apiDocsConfigRef,
+    deps: {},
+    factory: () => {
+      // load the default widgets
+      const definitionWidgets = defaultDefinitionWidgets();
+
+      return {
+        getApiDefinitionWidget: (apiEntity: ApiEntity) => {
+          // custom rendering for grpc
+          if (apiEntity.spec.type === 'grpc') {
+            return {
+              type: 'grpc',
+              title: 'gRPC Playground',
+              component: GrpcPlaygroundComponent
+            }
+          }
+          
+          // fallback to the defaults
+          return definitionWidgets.find(d => d.type === apiEntity.spec.type);
+        },
+      };
+    },
+  }),
+]
 ```
-// src/packages/app
+
+#### A path `/grpc-playground` in backstage application
+
+```tsx
+// packages/app/src/App.tsx
+import { GrpcPlaygroundPage } from 'backstage-grpc-playground'
+
+// your code
+// ...
+
+const routes = (
+  <FlatRoutes>
+    // other routes 
+    // ...
+    <Route path="/grpc-playground" element={<GrpcPlaygroundPage />} />
+  </FlatRoutes>
+);
 ```
+
+## Compare to BloomRPC
+
+- Import proto files and creating clients at backstage backend
+- Missing imports warning
+- Send server request only
 
 ## Examples
 
+#### Unary
 
+See full [yaml file](examples/yaml-definition/unary.yaml)
 
-## Documentation
+#### Stream
 
-- Slide: [B+ Tree](docs/B+tree.pdf), [GodBee](docs/GodBee.pdf)
-- Blog:
-    - [Implement Key-Value Storage using Golang and C++ pt.1](https://medium.com/zalopay-engineering/cài-đặt-key-value-store-service-bằng-go-và-c-phần-1-storage-565b1a3f7e1b)
-    - [Implement Key-Value Storage using Golang and C++ pt.2](https://medium.com/zalopay-engineering/cài-đặt-key-value-store-service-bằng-go-và-c-phần-2-service-937737ae515e)
+See full [yaml file](examples/yaml-definition/stream.yaml)
 
 ## Acknowledgements
 

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package employee;
+
+import "common.proto";
+
+service Employee {
+
+  rpc paySalary (EmployeeRequest) returns (stream EmployeeResponse) {}
+
+  rpc generateReport (stream ReportEmployeeRequest) returns (ReportEmployeeResponse) {}
+}

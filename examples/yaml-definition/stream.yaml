@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: helloworld-stream-api
+  description: helloworld stream gRPC
+  
+spec:
+  type: grpc
+  lifecycle: production
+  owner: zalopay-oss
+  definition:
+    $text: https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/stream/employee.proto
+  files:
+    - file_name: employee.proto
+      file_path: examples/stream/employee.proto
+      url: https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/stream/employee.proto
+
+      imports:
+        - file_name: common.proto
+          file_path: examples/stream/common.proto
+          url: https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/stream/common.proto
+      
+  targets:
+    dev:
+      host: 0.0.0.0
+      port: 4500
