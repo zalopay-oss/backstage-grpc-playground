@@ -11,8 +11,5 @@ Steps to test in your backstage application:
 - Navigate to `/catalog-import`
 
 - Import [examples/yaml-definition/unary.yaml](https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/yaml-definition/unary.yaml)
-![import step 1](import1.png)
-![import step 2](import2.png)
-![import step 3](import3.png)
 
 - Start gRPC server and make calls

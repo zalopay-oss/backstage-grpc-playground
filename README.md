@@ -10,6 +10,7 @@
 - [**Install**](#install)
 - [**Usage**](#usage)
 - [**Compare to BloomRPC**](#compare-to-bloomrpc)
+- [**Yaml file definition**](#yaml-file-definition)
 - [**Examples**](#examples)
 - [**Acknowledgements**](#acknowledgements)
 
@@ -44,7 +45,7 @@ Install backstage-grpc-playground for `packages/app`
 E.g: In your backstage project root
 
 ```zsh
-  yarn --cwd packages/app add backstage-grpc-playground
+yarn --cwd packages/app add backstage-grpc-playground
 ```
 
 ## Usage
@@ -107,17 +108,32 @@ const routes = (
 );
 ```
 
+Example importing API definition from Github [examples/yaml-definition/unary.yaml](https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/yaml-definition/unary.yaml)
+
+![import step 1](examples/unary/import1.png)
+![import step 2](examples/unary/import2.png)
+![import step 3](examples/unary/import3.png)
+
 ## Compare to BloomRPC
 
-- Import proto files and creating clients at backstage backend
-- Missing imports warning
-- Send server request only
+- Import proto files, creating clients and send gRPC requests at [backstage backend](https://github.com/zalopay-oss/backstage-grpc-playground-backend.git)
+- Proto files are contained in backend (default /packages/backend/proto)
+- Removed "Import from server reflection [See issue](https://github.com/zalopay-oss/backstage-grpc-playground/issues/2)
+- Removed "Add import paths" button
+- Removed "gRPC-web" switch
+- Missing imports warning; Allow user to upload folder
+  - User upload a file "employee.proto" that imports "common.proto"
+  ![missing import 1](examples/unary/missing_import_1.png)
 
-## Examples
+  - User upload a file "account.proto" that imports some google-apis proto files. In this case user should import google folder
+  ![missing import 2](examples/unary/missing_import_2.png)
+  ![missing import 3](examples/unary/missing_import_3.png)
 
-#### Yaml file definition
+## Yaml file definition
 
 See [yaml-definition](examples/yaml-definition/README.md)
+
+## Examples
 
 #### Unary
 
