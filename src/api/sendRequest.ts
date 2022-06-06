@@ -37,6 +37,16 @@ export const GRPCEventType = {
   MISSING_IMPORTS: "MISSING_IMPORTS",
 };
 
+interface GrpcResponse {
+  error?: {
+    code: string;
+    details: string;
+    metadata?: Object;
+  };
+  data?: any;
+  metaInfo: ResponseMetaInformation;
+}
+
 class RetriableError extends Error { }
 class FatalError extends Error { }
 
@@ -113,7 +123,14 @@ export class GRPCServerRequest extends EventEmitter {
               if (!ev.data) return;
 
               try {
-                const { data, metaInfo } = JSON.parse(ev.data);
+                const { error, data, metaInfo } = JSON.parse(ev.data) as GrpcResponse;
+
+                if (error) {
+                  const errorThrow = new Error(error.details);
+                  this.emit(GRPCEventType.ERROR, errorThrow, metaInfo);
+                  return;
+                }
+
                 this.emit(GRPCEventType.DATA, data, metaInfo);
               } catch (err) {
                 this.emit(GRPCEventType.ERROR, err, {});
@@ -159,12 +176,12 @@ export class GRPCServerRequest extends EventEmitter {
 
             try {
               // Unary
-              const { error, data, metaInfo } = await res.json();
+              const { error, data, metaInfo } = await res.json() as GrpcResponse;
 
               if (error) {
                 const errorThrow = new Error(error.details);
-
                 this.emit(GRPCEventType.ERROR, errorThrow, metaInfo);
+                return;
               }
 
               if (data) {
