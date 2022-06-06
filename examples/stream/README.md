@@ -1,6 +1,6 @@
 ## Example streaming gRPC 
 
-See full [yaml file](examples/yaml-definition/stream.yaml)
+See full [yaml file](../yaml-definition/stream.yaml)
 
 In this example we will use [this demo server from aditya-sridhar](https://github.com/aditya-sridhar/grpc-streams-nodejs-demo) as a gateway for gRPC call
 

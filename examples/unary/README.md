@@ -1,6 +1,6 @@
 ## Example unary gRPC call
 
-See full [yaml file](examples/yaml-definition/unary.yaml)
+See full [yaml file](../yaml-definition/unary.yaml)
 
 In this example we will use [this demo server from GRPC team](https://github.com/grpc/grpc-web/tree/master/net/grpc/gateway/examples/helloworld) as a gateway for gRPC call
 
