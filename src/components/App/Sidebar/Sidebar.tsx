@@ -14,7 +14,7 @@ import {
 
 import { Menu, Button, Dropdown, Modal, Tooltip, Tree, Input, TreeDataNode } from 'antd';
 import { Badge } from '../Badge/Badge';
-import { PathResolution } from "./PathResolution";
+// import { PathResolution } from "./PathResolution";
 import { getImportPaths } from "../../../storage";
 import { UrlResolution } from "./UrlResolution";
 import {
@@ -35,15 +35,15 @@ interface SidebarProps {
 
 export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUpload, onDeleteAll, onReload, onMethodDoubleClick }: SidebarProps) {
 
-  const [importPaths, setImportPaths] = useState<string[]>([""]);
+  // const [importPaths, setImportPaths] = useState<string[]>([""]);
   const [importPathVisible, setImportPathsVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filterMatch, setFilterMatch] = useState<string | null>(null);
   const [importReflectionVisible, setImportReflectionVisible] = useState(false);
 
-  useEffect(() => {
-    setImportPaths(getImportPaths());
-  }, []);
+  // useEffect(() => {
+  //   setImportPaths(getImportPaths());
+  // }, []);
 
   /**
    * An internal function to retrieve protobuff from the selected key
@@ -87,10 +87,10 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
         {
           'key': '1',
           onClick: () => {
-            openFileUpload();
+            openFileUpload(true);
           },
           icon: <FileOutlined />,
-          label: 'Import from file'
+          label: 'Import directory'
         },
       ]}
     />
@@ -151,14 +151,14 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
             />
           </Tooltip>
 
-          <Tooltip title="Import Paths" placement="bottomLeft" align={{ offset: [-8, 0] }}>
+          {/* <Tooltip title="Import Paths" placement="bottomLeft" align={{ offset: [-8, 0] }}>
             <Button
               style={{ paddingRight: 5, paddingLeft: 5, marginLeft: 5 }}
               onClick={() => setImportPathsVisible(true)}
               icon={<FileSearchOutlined style={{ cursor: "pointer", color: "#1d93e6" }} />}
               size='small'
             />
-          </Tooltip>
+          </Tooltip> */}
 
           <Tooltip title="Filter method names" placement="bottomLeft" align={{ offset: [-8, 0] }}>
             <Button
@@ -169,7 +169,7 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
             />
           </Tooltip>
 
-          <Modal
+          {/* <Modal
             title={(
               <div>
                 <FileSearchOutlined />
@@ -189,7 +189,7 @@ export function Sidebar({ protos, onMethodSelected, openFileUpload, onProtoUploa
               onImportsChange={setImportPaths}
               importPaths={importPaths}
             />
-          </Modal>
+          </Modal> */}
 
           <Modal
             title={(
