@@ -187,7 +187,7 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
       dispatch(setMetadata(initialRequest.metadata));
       dispatch(setTSLCertificate(initialRequest.tlsCertificate));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onClickExport = async () => {
@@ -222,17 +222,23 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
               dispatch(setUrl(environment.url));
               dispatch(setMetadata(environment.metadata));
               dispatch(setEnvironment(environment.name));
-              dispatch(setTSLCertificate(environment.tlsCertificate));
-              dispatch(setInteractive(environment.interactive));
 
-              onRequestChange?.({
+              const newState = {
                 ...state,
                 environment: environment.name,
                 url: environment.url,
                 metadata: environment.metadata,
-                tlsCertificate: environment.tlsCertificate,
-                interactive: environment.interactive,
-              });
+              }
+
+              if (!environment.isDefault) {
+                dispatch(setTSLCertificate(environment.tlsCertificate));
+                dispatch(setInteractive(environment.interactive));
+
+                newState.tlsCertificate = environment.tlsCertificate;
+                newState.interactive = environment.interactive;
+              }
+
+              onRequestChange?.(newState);
             }}
             onEnvironmentDelete={(environmentName) => {
               deleteEnvironment(environmentName);
