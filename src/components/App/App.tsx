@@ -37,10 +37,8 @@ import {
   GRPCTargetInfo,
   ProtoFile,
   ProtoService,
-  SavedProto,
   RawPlaceholderFile,
   UploadProtoResponse,
-  FileWithImports,
   EditorTabs,
   PlaceholderFile,
   RawEntitySpec
@@ -48,6 +46,7 @@ import {
 import { arrayMoveImmutable as arrayMove } from '../../utils'
 import { Store } from '../../storage/Store';
 
+import 'antd/dist/antd.css';
 import './app.css';
 
 function combineTargetToUrl(target: GRPCTargetInfo): string {
