@@ -15,6 +15,7 @@ export interface GRPCPlaygroundRequestOptions {
 
 export interface GetProtoPayload {
   entitySpec: EntitySpec;
+  isGenDoc?: boolean;
 }
 
 export interface UploadProtoPayload {

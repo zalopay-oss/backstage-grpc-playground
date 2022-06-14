@@ -1,1 +1,1 @@
-export { grpcPlaygroundPlugin, GrpcPlaygroundPage, GrpcPlaygroundComponent } from './plugin';
+export { grpcPlaygroundPlugin, GrpcPlaygroundPage, GrpcPlaygroundComponent, GrpcDocComponent } from './plugin';

@@ -5,7 +5,7 @@
 import React from 'react';
 import { CaretDownOutlined, FilePptOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons';
 import { Button, Tooltip, Switch, Modal, Menu, Dropdown, MenuProps } from 'antd';
-import { setInteractive, setProtoVisibility, setGrpcWeb } from './actions';
+import { setInteractive, setProtoVisibility, setGrpcWeb, setProtoDocVisibility } from './actions';
 import { EditorAction } from './Editor';
 import { useState } from "react";
 import { TLSManager } from "./TLSManager";
@@ -112,13 +112,23 @@ export function Options({ protoInfo, dispatch, grpcWebChecked, interactiveChecke
           />
         </div>
 
-        <Button
-          icon={<FilePptOutlined />}
-          type="dashed"
-          onClick={() => dispatch(setProtoVisibility(true))}
-        >
-          View Proto
-        </Button>
+        {protoInfo?.service?.proto?.protoDoc ? (
+          <Button
+            icon={<FilePptOutlined />}
+            type="dashed"
+            onClick={() => dispatch(setProtoDocVisibility(true))}
+          >
+            View Document
+          </Button>
+        ) : (
+          <Button
+            icon={<FilePptOutlined />}
+            type="dashed"
+            onClick={() => dispatch(setProtoVisibility(true))}
+          >
+            View Proto
+          </Button>
+        )}
       </div>
     </div>
   );

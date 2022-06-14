@@ -66,3 +66,12 @@ export const GrpcPlaygroundComponent = grpcPlaygroundPlugin.provide(
     }
   }),
 );
+
+export const GrpcDocComponent = grpcPlaygroundPlugin.provide(
+  createComponentExtension({
+    name: 'GRPC Doc Plugin',
+    component: {
+      lazy: () => import('./components/App').then(m => m.DocApp)
+    }
+  }),
+);

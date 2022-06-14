@@ -1,20 +1,27 @@
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import React from 'react';
+import React, { useRef } from 'react';
 import { useEffect, useState } from 'react';
 import {
   FileAddOutlined,
   FileOutlined,
   FolderAddOutlined,
   LoadingOutlined,
+  MenuOutlined,
   StopOutlined,
 } from '@ant-design/icons';
-import { Spin, Layout, Modal, Button, List } from 'antd';
+import { Spin, Layout, Modal, Button, List, Drawer } from 'antd';
 import { fileOpen, directoryOpen } from 'browser-fs-access';
 import { v4 as uuidv4 } from 'uuid';
 import pathParse from 'path-parse';
 import { useApi } from '@backstage/core-plugin-api';
 import { useEntity } from '@backstage/plugin-catalog-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+
+import 'antd/dist/antd.css';
+import 'github-markdown-css';
 
 import { handleProtoUpload, ProtoContextProvider, useProtoContext } from './ProtoProvider';
 import { Sidebar } from './Sidebar';
@@ -29,6 +36,7 @@ import {
   storeTabs,
 } from '../../storage';
 import { EditorEnvironment } from "./Editor";
+import { DocSidebar } from './Sidebar';
 import { getEnvironments as getEnvFromStorage, saveEnvironments } from "../../storage/environments";
 
 import {
@@ -46,7 +54,6 @@ import {
 import { arrayMoveImmutable as arrayMove } from '../../utils'
 import { Store } from '../../storage/Store';
 
-import 'antd/dist/antd.css';
 import './app.css';
 
 function combineTargetToUrl(target: GRPCTargetInfo): string {
@@ -73,7 +80,6 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
     activeKey: "0",
     tabs: [],
   });
-
   const {
     protos,
     setProtos,
@@ -139,46 +145,8 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
    */
   async function hydrateEditor() {
     setLoading(true);
-    const rawSpec = { ...(spec || {}) } as RawEntitySpec;
-    const entitySpec: EntitySpec = {
-      owner: rawSpec.owner,
-      system: rawSpec.system,
-      lifecycle: rawSpec.lifecycle,
-      type: rawSpec.type,
-      definition: rawSpec.definition,
-      imports: rawSpec.imports?.map(mapRawPlaceholderFile),
-      files: rawSpec.files?.map(mapRawPlaceholderFile) || [],
-      targets: rawSpec.targets,
-    };
 
-    const savedProtos = getProtos();
-
-    if (savedProtos.length) {
-      const processProtos: PlaceholderFile[] = savedProtos.map(p => ({
-        ...p,
-        isPreloaded: true,
-      }));
-
-      const fromSpec = entitySpec.files || [];
-
-      // unique protofiles
-      fromSpec.forEach((proto: PlaceholderFile) => {
-        if (!proto) return;
-
-        // check if saved
-        const index = processProtos.findIndex(({ filePath }) => filePath === proto.filePath);
-        if (index > -1) {
-          processProtos[index] = {
-            ...processProtos[index],
-            url: proto.url,
-          }
-        } else {
-          processProtos.push(proto);
-        }
-      });
-
-      entitySpec.files = processProtos;
-    }
+    const entitySpec = parseRawEntitySpec(spec);
 
     grpcPlaygroundApi.getProto({ entitySpec })
       .then(res => {
@@ -387,11 +355,126 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
   );
 }
 
+const GrpcDocApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, spec }) => {
+  const [isLoading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<ProtoFile | undefined>();
+  const [isShowDrawer, setShowDrawer] = useState(false);
+  const containerRef = useRef<HTMLElement | null>(null);
+
+  const {
+    protos,
+    handleProtoResult,
+  } = useProtoContext()!;
+
+  const grpcPlaygroundApi = useApi(grpcPlaygroundApiRef);
+
+  useEffect(() => {
+    Store.setGlobalKey(appId);
+    grpcPlaygroundApi.setEntityName(appId);
+  }, [appId, grpcPlaygroundApi])
+
+  useEffect(() => {
+    // Preload editor with stored data.
+    hydrateEditor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Hydrate editor from persisted storage
+   */
+  async function hydrateEditor() {
+    setLoading(true);
+
+    const entitySpec = parseRawEntitySpec(spec);
+
+    grpcPlaygroundApi.getProto({ entitySpec, isGenDoc: true })
+      .then(res => {
+        if (res.protos?.length) {
+          setSelectedFile(res.protos[0])
+        }
+
+        handleProtoResult(res);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
+
+  const onProtofileSelected = (protoFile: ProtoFile) => {
+    setSelectedFile(protoFile);
+  }
+
+  return (
+    <Spin spinning={isLoading} indicator={<LoadingOutlined style={{ fontSize: 24 }} />}>
+      <Layout style={styles.layout}>
+        <Layout ref={containerRef}>
+          <Drawer
+            title='Protos'
+            getContainer={false}
+            placement='left'
+            style={{
+              position: 'absolute',
+              transform: 'translateX(-16px)',
+            }}
+            visible={isShowDrawer}
+            maskClosable
+            onClose={() => setShowDrawer(false)}
+          >
+            <DocSidebar
+              protos={protos}
+              onProtofileSelected={onProtofileSelected}
+            />
+          </Drawer>
+
+          <Layout.Content>
+            {selectedFile?.proto?.protoDoc ? (
+              <ReactMarkdown
+                children={selectedFile.proto.protoDoc}
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
+                transformLinkUri={(uri: string) => uri || undefined as any}
+                className="markdown-body"
+                components={{
+                  h1: ({ node, ...props }) => {
+                    return (
+                      <h1 style={{ display: 'flex', alignItems: 'center' }}>
+                        <Button style={{ marginRight: 20 }} shape="circle" onClick={() => setShowDrawer(true)}>
+                          <MenuOutlined />
+                        </Button>
+                        {props.children}
+                      </h1>
+                    )
+                  }
+                }}
+              />
+            ) : null}
+
+          </Layout.Content>
+        </Layout>
+
+      </Layout>
+    </Spin >
+  );
+}
+
 export function StandaloneApp() {
   return (
     <ProtoContextProvider>
       <GrpcPlaygroundApplication
         appId={DEFAULT_APP_ID}
+      />
+    </ProtoContextProvider>
+  )
+}
+
+export function DocApp() {
+  const { entity } = useEntity();
+
+  return (
+    <ProtoContextProvider>
+      <GrpcDocApplication
+        appId={entity?.metadata?.name || DEFAULT_APP_ID}
+        spec={entity?.spec as unknown as (RawEntitySpec | undefined)}
       />
     </ProtoContextProvider>
   )
@@ -408,6 +491,51 @@ export function App() {
       />
     </ProtoContextProvider>
   )
+}
+
+function parseRawEntitySpec(spec?: RawEntitySpec): EntitySpec {
+  const rawSpec = { ...(spec || {}) } as RawEntitySpec;
+  const entitySpec: EntitySpec = {
+    owner: rawSpec.owner,
+    system: rawSpec.system,
+    lifecycle: rawSpec.lifecycle,
+    type: rawSpec.type,
+    definition: rawSpec.definition,
+    imports: rawSpec.imports?.map(mapRawPlaceholderFile),
+    files: rawSpec.files?.map(mapRawPlaceholderFile) || [],
+    targets: rawSpec.targets,
+  };
+
+  const savedProtos = getProtos();
+
+  if (savedProtos.length) {
+    const processProtos: PlaceholderFile[] = savedProtos.map(p => ({
+      ...p,
+      isPreloaded: true,
+    }));
+
+    const fromSpec = entitySpec.files || [];
+
+    // unique protofiles
+    fromSpec.forEach((proto: PlaceholderFile) => {
+      if (!proto) return;
+
+      // check if saved
+      const index = processProtos.findIndex(({ filePath }) => filePath === proto.filePath);
+      if (index > -1) {
+        processProtos[index] = {
+          ...processProtos[index],
+          url: proto.url,
+        }
+      } else {
+        processProtos.push(proto);
+      }
+    });
+
+    entitySpec.files = processProtos;
+  }
+
+  return entitySpec;
 }
 
 /**

@@ -7,6 +7,7 @@ export interface Proto {
   filePath: string;
   imports?: PlaceholderFile[];
   protoText: string;
+  protoDoc: string;
   ast: GrpcObject;
   root: Root;
 }
