@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import React from 'react';
+import React, { useRef } from 'react';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import AceEditor from 'react-ace';
 import Resizable from 're-resizable';
@@ -16,6 +16,7 @@ interface MetadataProps {
 
 export function Metadata({ onClickMetadata, onMetadataChange, value }: MetadataProps) {
   const [height, setHeight] = useState(38);
+  const previousHeight = useRef<number | null>(null);
   const visibile = height > 38;
 
   return (
@@ -27,10 +28,11 @@ export function Metadata({ onClickMetadata, onMetadataChange, value }: MetadataP
       onResizeStop={(e, direction, ref, d) => {
         setHeight(height + d.height);
       }}
-      className="meatada-panel"
+      className="metadada-panel"
       style={{
         ...styles.optionContainer,
-        ...{ bottom: `-38px`, height: `${height}px` },
+        ...{ bottom: 0, height: `${height}px` },
+        transform: `translateY(${visibile ? '0' : `calc(100% - ${height - 4}px)`})`,
       }}
     >
       <div>
@@ -40,9 +42,10 @@ export function Metadata({ onClickMetadata, onMetadataChange, value }: MetadataP
             style={styles.optionLink}
             onClick={() => {
               if (visibile) {
-                setHeight(38)
+                previousHeight.current = height;
+                setHeight(38);
               } else {
-                setHeight(150);
+                setHeight(previousHeight.current ?? 170);
               }
               onClickMetadata()
             }}
@@ -53,7 +56,7 @@ export function Metadata({ onClickMetadata, onMetadataChange, value }: MetadataP
           <AceEditor
             width="100%"
             style={{ background: "#f5f5f5" }}
-            height={`${height + 20}px`}
+            height={`${height - 43}px`}
             mode="json"
             focus={visibile}
             theme="textmate"

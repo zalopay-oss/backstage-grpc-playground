@@ -138,6 +138,7 @@ const styles = {
     height: "100%"
   },
   tabBarStyle: {
+    height: '50px',
     padding: "10px 0px 0px 20px",
     marginBottom: "0px",
   }
