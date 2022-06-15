@@ -75,6 +75,10 @@ export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
       formData.append('fileMappings', JSON.stringify(payload.fileMappings));
     }
 
+    if (payload.isGenDoc !== undefined) {
+      formData.append('isGenDoc', JSON.stringify(payload.isGenDoc));
+    }
+
     const res = await this.fetchApi.fetch(
       `${await this.discoveryApi.getBaseUrl('grpc-playground')}/upload-proto/${this.entityName}`,
       {
