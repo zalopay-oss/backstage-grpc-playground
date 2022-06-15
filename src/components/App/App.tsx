@@ -14,7 +14,7 @@ import { Spin, Layout, Modal, Button, List, Drawer } from 'antd';
 import { fileOpen, directoryOpen } from 'browser-fs-access';
 import { v4 as uuidv4 } from 'uuid';
 import pathParse from 'path-parse';
-import { useApi } from '@backstage/core-plugin-api';
+import { configApiRef, useApi } from '@backstage/core-plugin-api';
 import { useEntity } from '@backstage/plugin-catalog-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -91,6 +91,7 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
   } = useProtoContext()!;
 
   const grpcPlaygroundApi = useApi(grpcPlaygroundApiRef);
+  const configApi = useApi(configApiRef);
 
   const [environments, setEnvironments] = useState<EditorEnvironment[]>(getEnvironments());
 
@@ -145,10 +146,11 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
    */
   async function hydrateEditor() {
     setLoading(true);
+    const isGenDoc = configApi.getOptionalBoolean('grpcPlayground.document.enabled');
 
     const entitySpec = parseRawEntitySpec(spec);
 
-    grpcPlaygroundApi.getProto({ entitySpec })
+    grpcPlaygroundApi.getProto({ entitySpec, isGenDoc })
       .then(res => {
         handleProtoResult(res);
 
@@ -217,11 +219,14 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
           (relativePath ? [relativePath, file.name].join('/') : '');
       });
     }
+    
+    const isGenDoc = configApi.getOptionalBoolean('grpcPlayground.document.enabled');
 
     const res: UploadProtoResponse = await grpcPlaygroundApi.uploadProto({
       files: uploadFiles,
       importFor: importFor,
       fileMappings,
+      isGenDoc
     });
 
     handleProtoResult(res, true);

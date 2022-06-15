@@ -22,6 +22,7 @@ export interface UploadProtoPayload {
   files: FileList | File[];
   importFor?: FileWithImports;
   fileMappings?: Record<string, string>;
+  isGenDoc?: boolean;
 }
 
 export interface UploadProtoResponse {
