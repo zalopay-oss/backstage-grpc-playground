@@ -10,6 +10,7 @@ const actions = {
   SET_METADATA: "SET_METADATA",
   SET_METADATA_VISIBILITY: "SET_METADATA_VISIBILITY",
   SET_PROTO_VISIBILITY: "SET_PROTO_VIEW",
+  SET_PROTO_DOC_VISIBILITY: "SET_PROTO_DOC_VISIBILITY",
   SET_INTERACTIVE: "SET_INTERACTIVE",
   SET_GRPC_WEB: "SET_GRPC_WEB",
   SET_REQUEST_STREAM_DATA: "SET_REQUEST_STREAM_DATA",
@@ -50,6 +51,10 @@ export function setMetadataVisibilty(visible: boolean) {
 
 export function setProtoVisibility(visible: boolean) {
   return { type: actions.SET_PROTO_VISIBILITY, visible };
+}
+
+export function setProtoDocVisibility(visible: boolean) {
+  return { type: actions.SET_PROTO_DOC_VISIBILITY, visible };
 }
 
 export function setGrpcWeb(grpcWeb: boolean) {

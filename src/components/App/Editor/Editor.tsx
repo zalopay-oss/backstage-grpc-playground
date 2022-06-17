@@ -6,6 +6,7 @@ import {
   setData, setEnvironment, setInteractive,
   setMetadata,
   setMetadataVisibilty,
+  setProtoDocVisibility,
   setProtoVisibility,
   setTSLCertificate,
   setUrl,
@@ -26,6 +27,7 @@ import Resizable from "re-resizable";
 import { AddressBar } from "./AddressBar";
 import { deleteEnvironment, getEnvironments, saveEnvironment } from "../../../storage/environments";
 import { ProtoInfo, Certificate, GRPCEventEmitter } from '../../../api';
+import { ProtoDocViewer } from './ProtoDocViewer';
 
 export interface EditorAction {
   [key: string]: any
@@ -57,6 +59,7 @@ export interface EditorState extends EditorRequest {
   response: EditorResponse
   metadataOpened: boolean
   protoViewVisible: boolean
+  protoDocViewVisible: boolean
   requestStreamData: string[]
   responseStreamData: EditorResponse[]
   streamCommitted: boolean
@@ -92,6 +95,7 @@ const INITIAL_STATE: EditorState = {
   },
   metadataOpened: false,
   protoViewVisible: false,
+  protoDocViewVisible: false,
   streamCommitted: false,
   tlsCertificate: undefined,
   call: undefined,
@@ -128,6 +132,9 @@ const reducer = (state: EditorState, action: EditorAction) => {
 
     case actions.SET_PROTO_VISIBILITY:
       return { ...state, protoViewVisible: action.visible };
+
+    case actions.SET_PROTO_DOC_VISIBILITY:
+      return { ...state, protoDocViewVisible: action.visible };
 
     case actions.SET_INTERACTIVE:
       return { ...state, interactive: action.interactive };
@@ -371,6 +378,14 @@ export function Editor({ protoInfo, initialRequest, onRequestChange, onEnvironme
           onClose={() => dispatch(setProtoVisibility(false))}
         />
       )}
+
+      {protoInfo && (
+        <ProtoDocViewer
+          protoInfo={protoInfo}
+          visible={state.protoDocViewVisible}
+          onClose={() => dispatch(setProtoDocVisibility(false))}
+        />
+      )}
     </div>
   )
 }
@@ -380,6 +395,7 @@ const styles = {
     width: "100%",
     height: "100%",
     position: "relative" as "relative",
+    overflow: 'hidden',
   },
   editorContainer: {
     display: "flex",

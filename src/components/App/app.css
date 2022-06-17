@@ -196,3 +196,21 @@ a:hover {
   position: relative;
   overflow: hidden;
 }
+
+.ant-drawer-close {
+  color: #fff;
+}
+
+.proto-doc-drawer .ant-drawer-header {
+  border: none;
+}
+
+.proto-doc-drawer .ant-drawer-body {
+  padding: 0;
+}
+
+.markdown-body {
+  left: 50%;
+  padding: calc(1em + 1ex);
+  right: 0;
+}
