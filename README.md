@@ -4,6 +4,7 @@
 
 <!-- TOC -->
 - [**Overview**](#overview)
+- [**Changelog**](#changelog)
 - [**Requirements**](#requirements)
 - [**Methods supported**](#methods-supported)
 - [**Not supported**](#not-supported-yet)
@@ -19,6 +20,10 @@
 **backstage-grpc-playground** is a [backstage](https://backstage.io) plugin ported from [BloomRPC](https://github.com/bloomrpc/bloomrpc) which is an Electron application. We modified some of the original code to make this compatible with Backstage entity. See [Compare to BloomRPC](#compare-to-bloomrpc)
 
 This repo contains React frontend plugin. For the backend plugin, please checkout [backstage-grpc-playground-backend](https://github.com/zalopay-oss/backstage-grpc-playground-backend.git)
+
+## Changelog
+
+View [Full changelog](CHANGELOG.md)
 
 ## Requirements
 
@@ -135,7 +140,7 @@ See [yaml-definition](examples/yaml-definition/README.md)
 
 #### View document
 
-
+See [example](https://github.com/zalopay-oss/backstage-grpc-playground/pull/4)
 
 #### Unary
 
