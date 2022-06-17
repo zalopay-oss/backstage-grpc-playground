@@ -116,6 +116,7 @@ Example importing API definition from Github [examples/yaml-definition/unary.yam
 
 - Load proto files from [defined entity spec](#yaml-file-definition) (learn more at [examples](#examples)), creating clients and send gRPC requests at [backstage backend](https://github.com/zalopay-oss/backstage-grpc-playground-backend.git)
 - Proto files are contained in backend (default /packages/backend/proto)
+- Able to view document generated as markdown with protoc-gen-doc integrated in backend plugin. See [example](#examples)
 - Removed "Import from server reflection" [See issue](https://github.com/zalopay-oss/backstage-grpc-playground/issues/2)
 - Removed "Add import paths" button
 - Removed "gRPC-web" switch
@@ -131,6 +132,10 @@ Example importing API definition from Github [examples/yaml-definition/unary.yam
 See [yaml-definition](examples/yaml-definition/README.md)
 
 ## Examples
+
+#### View document
+
+
 
 #### Unary
 

@@ -2,3 +2,6 @@ node_modules
 dist
 dist-types
 .DS_Store
+yarn.lock
+changelog-gen.sh
+.github_changelog_generator
