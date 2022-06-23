@@ -156,6 +156,6 @@ See [example](examples/stream/README.md)
 
 ## Acknowledgements
 
-- Thanks to [Backstage Team](https://github.com/backstage/backstage) for creating an incredable framework
+- Thanks to [Backstage Team](https://github.com/backstage/backstage) for creating an incredible framework
 - Thanks to the authors of the awesome [BloomRPC Application](https://github.com/bloomrpc/bloomrpc)
 - Feel free to [submit new issues](https://github.com/zalopay-oss/backstage-grpc-playground/issues/new)
