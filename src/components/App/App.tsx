@@ -219,7 +219,7 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
           (relativePath ? [relativePath, file.name].join('/') : '');
       });
     }
-    
+
     const isGenDoc = configApi.getOptionalBoolean('grpcPlayground.document.enabled');
 
     const res: UploadProtoResponse = await grpcPlaygroundApi.uploadProto({
@@ -369,6 +369,12 @@ const GrpcDocApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, s
   const {
     protos,
     handleProtoResult,
+    toggleModalMissingImports,
+    modalMissingImportsOpen,
+    importFor,
+    ignoreCurrentMissingImport,
+    addUploadedListener,
+    removeUploadedListener
   } = useProtoContext()!;
 
   const grpcPlaygroundApi = useApi(grpcPlaygroundApiRef);
@@ -407,6 +413,91 @@ const GrpcDocApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, s
 
   const onProtofileSelected = (protoFile: ProtoFile) => {
     setSelectedFile(protoFile);
+  }
+
+  const onClickOpenFile = () => {
+    toggleModalMissingImports();
+    openFileUpload();
+  }
+
+  const onClickOpenDirectory = () => {
+    toggleModalMissingImports();
+    openFileUpload(true);
+  }
+
+  const openFileUpload = async (directory?: boolean) => {
+    let choosenFiles;
+
+    try {
+      choosenFiles = !directory
+        ? await fileOpen({
+          multiple: true,
+          id: 'protos',
+          extensions: ['.proto'],
+        })
+        : await directoryOpen({
+          recursive: true,
+          id: 'proto-directory',
+        });
+    } catch (err) {
+      // User closed file chooser
+    }
+
+    if (!choosenFiles) return;
+
+    let fileMappings: Record<string, string> | undefined;
+
+    // filter only proto files
+    const uploadFiles = !directory
+      ? choosenFiles
+      : choosenFiles.filter(file => {
+        return file.name.endsWith('.proto');
+      });
+
+    if (directory) {
+      fileMappings = {};
+      uploadFiles.forEach(file => {
+        fileMappings![file.name] = file.webkitRelativePath;
+      });
+    } else if (importFor) {
+      fileMappings = {};
+      let relativePath: string | undefined;
+
+      try {
+        relativePath = pathParse(importFor.missing?.[0].filePath || '').dir;
+      } catch (err) {
+        // ignore
+      }
+
+      uploadFiles.forEach(file => {
+        fileMappings![file.name] = file.webkitRelativePath ||
+          (relativePath ? [relativePath, file.name].join('/') : '');
+      });
+    }
+
+    const isGenDoc = true;
+
+    if (isGenDoc) {
+      let handlerId: string | undefined;
+      // eslint-disable-next-line prefer-const
+      handlerId = addUploadedListener(protos => {
+        removeUploadedListener(handlerId!);
+
+        if (protos?.length) {
+          // Select first file to display doc
+          setSelectedFile(protos[0])
+        }
+      })
+    }
+
+    const res: UploadProtoResponse = await grpcPlaygroundApi.uploadProto({
+      files: uploadFiles,
+      importFor: importFor,
+      fileMappings,
+      isGenDoc
+    });
+
+    handleProtoResult(res, true);
   }
 
   return (
@@ -453,7 +544,40 @@ const GrpcDocApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, s
                 }}
               />
             ) : null}
+            <Modal
+              footer={[
+                <Button key="open-file" icon={<FileAddOutlined />} type="primary" onClick={onClickOpenFile}>
+                  Import file
+                </Button>,
+                <Button key="open-directory" icon={<FolderAddOutlined />} type="primary" onClick={onClickOpenDirectory}>
+                  Import directory
+                </Button>,
+                <Button key="back" danger icon={<StopOutlined />} onClick={ignoreCurrentMissingImport}>
+                  Ignore
+                </Button>,
+              ]}
+              title="Missing dependencies"
+              destroyOnClose
+              onCancel={ignoreCurrentMissingImport}
+              visible={modalMissingImportsOpen}
+            >
+              {importFor ? (
+                <>
+                  <strong>{importFor.filePath}</strong> is missing these files
+                  <List
+                    bordered={false}
+                    dataSource={importFor?.missing}
+                    renderItem={item => (
+                      <List.Item>
+                        <FileOutlined style={{ marginRight: 10 }} />
+                        {item.filePath}
+                      </List.Item>
+                    )}
+                  />
+                </>
+              ) : null}
 
+            </Modal>
           </Layout.Content>
         </Layout>
 
