@@ -88,7 +88,7 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
           onProtoUpload(res.protos);
 
           if (successEmit) {
-            protoUploadEmit(ProtoUploadAction.SUCCESS, protos);
+            protoUploadEmit(ProtoUploadAction.SUCCESS, res.protos);
           }
         }
         break;
