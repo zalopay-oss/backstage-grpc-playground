@@ -1,8 +1,25 @@
 # Changelog
 
+## [v0.1.3](https://github.com/zalopay-oss/backstage-grpc-playground/tree/v0.1.3) (2022-07-15)
+
+[Full Changelog](https://github.com/zalopay-oss/backstage-grpc-playground/compare/v0.1.2...v0.1.3)
+
+**Fixed bugs:**
+
+- GrpcDocApplication won't display missing import modal [\#6](https://github.com/zalopay-oss/backstage-grpc-playground/issues/6)
+
+**Merged pull requests:**
+
+- fix uploadSuccessEmitter wont emit new data [\#7](https://github.com/zalopay-oss/backstage-grpc-playground/pull/7) ([fr0stf0x](https://github.com/fr0stf0x))
+- Typo in README [\#5](https://github.com/zalopay-oss/backstage-grpc-playground/pull/5) ([fcorti](https://github.com/fcorti))
+
 ## [v0.1.2](https://github.com/zalopay-oss/backstage-grpc-playground/tree/v0.1.2) (2022-06-17)
 
 [Full Changelog](https://github.com/zalopay-oss/backstage-grpc-playground/compare/v0.1.2-next.1...v0.1.2)
+
+**Implemented enhancements:**
+
+- Generate markdown doc with protoc-gen-doc and display on UI [\#3](https://github.com/zalopay-oss/backstage-grpc-playground/issues/3)
 
 ## [v0.1.2-next.1](https://github.com/zalopay-oss/backstage-grpc-playground/tree/v0.1.2-next.1) (2022-06-17)
 
