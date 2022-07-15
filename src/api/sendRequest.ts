@@ -174,8 +174,17 @@ export class GRPCServerRequest extends EventEmitter {
           .then(async (res) => {
             if (!res) return;
 
+            // Unary
+            if (res.status === 400) {
+              const uploadProtoRes = await res.json() as UploadProtoResponse | undefined;
+
+              if (uploadProtoRes?.status === LoadProtoStatus.part) {
+                this.emit(GRPCEventType.MISSING_IMPORTS, uploadProtoRes);
+                throw new FatalError();
+              }
+            }
+
             try {
-              // Unary
               const { error, data, metaInfo } = await res.json() as GrpcResponse;
 
               if (error) {
