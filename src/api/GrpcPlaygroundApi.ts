@@ -1,6 +1,6 @@
 import { createApiRef } from "@backstage/core-plugin-api";
 import { ProtoFile } from "./protobuf";
-import { EntitySpec, LoadProtoStatus, FileWithImports, PlaceholderFile } from "./types";
+import { EntitySpec, LoadProtoStatus, FileWithImports, PlaceholderFile, Certificate, CertFile, LoadCertStatus, CertType } from "./types";
 
 /**
  * Options you can pass into a catalog request for additional information.
@@ -40,10 +40,25 @@ export interface SendRequestPayload {
     inputs: Object;
     metadata: Object;
   };
+  tlsCertificate?: Certificate;
   methodName: string;
   serviceName: string;
   url: string;
   interactive?: boolean;
+}
+
+export interface UploadCertificatePayload {
+  files: File | FileList | File[];
+  fileMappings?: Record<string, CertFile>;
+  // type: CertType;
+}
+
+export interface UploadCertificateResponse {
+  status: LoadCertStatus;
+  certs: CertFile[];
+  certificate?: Certificate;
+  missingCerts?: CertFile[];
+  message?: string;
 }
 
 export interface SendRequestResponse extends Response { }
@@ -69,4 +84,5 @@ export interface GrpcPlaygroundApi {
   sendServerRequest: SendServerRequest;
   getProto: GetProtoRequest;
   setEntityName: (entity: string) => void;
+  uploadCertificate: (payload: UploadCertificatePayload, options?: GRPCPlaygroundRequestOptions) => Promise<UploadCertificateResponse>;
 }

@@ -16,18 +16,26 @@ export class Store {
     this.name = options.name;
   }
 
-  get(key: string, defaultValue: any = null): any {
+  get(key: string, defaultValue: any = null, emptyCheck?: (val: any) => boolean): any {
     const raw = localStorage.getItem(this.createJoinedKey(key));
     
+    let actualVal = defaultValue;
+
     if (raw !== null) {
       try {
-        return JSON.parse(raw);
+        actualVal = JSON.parse(raw);
       } catch (err) {
-        return raw;
+        actualVal = raw;
       }
     }
 
-    return defaultValue;
+    if (emptyCheck && typeof emptyCheck === 'function') {
+      if (emptyCheck(actualVal)) {
+        actualVal = defaultValue;
+      }
+    }
+
+    return actualVal;
   }
 
   set = (key: string, value: any) => {

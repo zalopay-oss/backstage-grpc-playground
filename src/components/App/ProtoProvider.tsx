@@ -87,7 +87,7 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
         if (res.protos) {
           onProtoUpload(res.protos);
 
-          if (successEmit) {
+          if (successEmit && !missingImports.current.length) {
             protoUploadEmit(ProtoUploadAction.SUCCESS, res.protos);
           }
         }

@@ -16,16 +16,18 @@ import {
   addResponseStreamData, setStreamCommitted
 } from './actions';
 import { ControlsStateProps } from './Controls';
-import { GRPCServerRequest, GRPCEventType, ResponseMetaInformation, grpcPlaygroundApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
+import { GRPCServerRequest, GRPCEventType, ResponseMetaInformation, grpcPlaygroundApiRef, SendServerRequest, UploadProtoResponse, UploadCertificateResponse, Certificate } from '../../../api';
 
 import { ProtoContextType, useProtoContext } from '../ProtoProvider';
+import { CertificateContextType, useCertificateContext } from '../CertificateProvider';
 
 type MakeRequestPayload = ControlsStateProps & {
-  protoContext: ProtoContextType,
-  sendServerRequest: SendServerRequest
+  protoContext: ProtoContextType;
+  certContext: CertificateContextType;
+  sendServerRequest: SendServerRequest;
 }
 
-export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, protoContext }: MakeRequestPayload) => {
+export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, protoContext, certContext }: MakeRequestPayload) => {
   // Do nothing if not set
   if (!protoInfo) {
     return;
@@ -90,6 +92,22 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, pro
     })
   });
 
+  grpcRequest.on(GRPCEventType.MISSING_CERTS, (uploadProtoRes: UploadCertificateResponse) => {
+    const selectedCertifcate = grpcRequest.tlsCertificate!;
+    certContext.handleCertResult(uploadProtoRes, selectedCertifcate);
+
+    let handlerId: string | undefined;
+    // eslint-disable-next-line prefer-const
+    handlerId = certContext.addUploadedListener((certificate) => {
+      certContext.removeUploadedListener(handlerId!);
+
+      if (certificate.rootCert?.filePath === selectedCertifcate?.rootCert?.filePath) {
+        // Re-send
+        grpcRequest.send();
+      }
+    })
+  });
+
   grpcRequest.on(GRPCEventType.DATA, (data: object, metaInfo: ResponseMetaInformation) => {
     if (metaInfo.stream && state.interactive) {
       dispatch(addResponseStreamData({
@@ -134,6 +152,7 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
   const grpcApi = useApi(grpcPlaygroundApiRef);
   const sendServerRequest = grpcApi.sendServerRequest.bind(grpcApi);
   const protoContext = useProtoContext()!;
+  const certContext = useCertificateContext()!;
 
   React.useEffect(() => {
     if (!active) {
@@ -145,7 +164,7 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
         return
       }
 
-      makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })
+      makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext, certContext })
     })
   }, [
     // a bit of optimisation here: list all state properties needed in this component
@@ -157,11 +176,12 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
     state.tlsCertificate,
     sendServerRequest,
     protoContext,
+    certContext,
   ])
 
   const iconProps = {
     style: { ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) },
-    onClick: () => makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })
+    onClick: () => makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext, certContext }),
   }
 
   return state.loading ? (

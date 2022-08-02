@@ -15,12 +15,21 @@ export function storeTLSList(certs: Certificate[]) {
   TLSStore.set(TLS_KEYS.CERTIFICATES, certs);
 }
 
+function checkEmptyTLSList(val: any) {
+  return val === null || val === undefined || (val as []).length === 0;
+}
+
 export function getTLSList() {
-  const serverCertificate = {
+  const serverCertificate: Certificate = {
     useServerCertificate: true,
-    rootCert: { fileName: "Server Certificate", filePath: "" },
+    rootCert: {
+      fileName: "Server Certificate",
+      filePath: "",
+      type: 'rootCert',
+    },
   };
-  return TLSStore.get(TLS_KEYS.CERTIFICATES, [serverCertificate]);
+
+  return TLSStore.get(TLS_KEYS.CERTIFICATES, [serverCertificate], checkEmptyTLSList);
 }
 
 export function clearTLS() {

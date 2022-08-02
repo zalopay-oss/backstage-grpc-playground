@@ -3,12 +3,12 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import React from 'react';
-import { useEffect, useState } from 'react';
 import { CloseOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import { Button, Input, Radio, Table } from "antd";
-// import { Certificate, importCertChain, importPrivateKey, importRootCert } from "../../behaviour";
-import { getTLSList, storeTLSList } from "../../../storage";
-import { importPrivateKey, importCertChain, importRootCert, Certificate } from '../../../api';
+import { Certificate, CertType } from '../../../api';
+import { useApi } from '@backstage/core-plugin-api';
+import { grpcPlaygroundApiRef } from '../../../api';
+import { useCertificateContext } from '../CertificateProvider';
 
 interface TLSManagerProps {
   selected?: Certificate
@@ -16,16 +16,13 @@ interface TLSManagerProps {
 }
 
 export function TLSManager({ selected, onSelected }: TLSManagerProps) {
-  const [certs, setStateCerts] = useState<Certificate[]>([]);
-
-  function setCerts(newCerts: Certificate[]) {
-    setStateCerts(newCerts);
-    storeTLSList(newCerts);
-  }
-
-  useEffect(() => {
-    setStateCerts(getTLSList());
-  }, []);
+  const {
+    certs,
+    setCerts,
+    handleImportCert: importCert,
+  } = useCertificateContext()!;
+  const grpcPlaygroundApi = useApi(grpcPlaygroundApiRef);
+  const handleImportCert = importCert.bind(null, grpcPlaygroundApi);
 
   return (
     <>
@@ -33,7 +30,7 @@ export function TLSManager({ selected, onSelected }: TLSManagerProps) {
         <Button
           type="primary"
           onClick={async () => {
-            const cert = await handleImportRootCert(certs, setCerts);
+            const cert = await handleImportCert('rootCert');
 
             if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
               onSelected?.(cert);
@@ -97,7 +94,7 @@ export function TLSManager({ selected, onSelected }: TLSManagerProps) {
                 ) : (
                   <a onClick={async (e) => {
                     e.preventDefault();
-                    const cert = await handleImportPrivateKey(certificate, certs, setCerts);
+                    const cert = await handleImportCert('privateKey', undefined, certificate);
                     if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
                       onSelected?.(cert);
                     }
@@ -124,7 +121,7 @@ export function TLSManager({ selected, onSelected }: TLSManagerProps) {
                 ) : (
                   <a onClick={async (e) => {
                     e.preventDefault();
-                    const cert = await handleImportCertChain(certificate, certs, setCerts);
+                    const cert = await handleImportCert('certChain', undefined, certificate);
                     if (cert && cert.rootCert.filePath === (selected && selected.rootCert.filePath)) {
                       onSelected?.(cert);
                     }
@@ -179,69 +176,6 @@ export function TLSManager({ selected, onSelected }: TLSManagerProps) {
       </Table>
     </>
   );
-}
-
-async function handleImportRootCert(certs: Certificate[], setCerts: React.Dispatch<Certificate[]>): Promise<Certificate | void> {
-  try {
-    const certificate = await importRootCert();
-
-    if (!certificate) return;
-
-    const newCerts = certs
-      .filter((cert) => cert.rootCert.filePath !== certificate.rootCert.filePath);
-
-    newCerts.push(certificate);
-
-    setCerts(newCerts);
-
-    return certificate;
-  } catch (e) {
-    // No file selected.
-  }
-}
-
-async function handleImportPrivateKey(
-  certificate: Certificate,
-  certs: Certificate[],
-  setCerts: React.Dispatch<Certificate[]>
-): Promise<Certificate | void> {
-  try {
-    const pk = await importPrivateKey();
-
-    if (!pk) return;
-
-    certificate.privateKey = pk;
-
-    const certIndex = certs.findIndex((cert) => cert.rootCert.filePath === certificate.rootCert.filePath);
-    certs[certIndex] = certificate;
-
-    setCerts(certs);
-    return certificate;
-  } catch (e) {
-    // No file Selected
-  }
-}
-
-async function handleImportCertChain(
-  certificate: Certificate,
-  certs: Certificate[],
-  setCerts: React.Dispatch<Certificate[]>
-): Promise<Certificate | void> {
-  try {
-    const chain = await importCertChain();
-
-    if (!chain) return;
-
-    certificate.certChain = chain;
-
-    const certIndex = certs.findIndex((cert) => cert.rootCert.filePath === certificate.rootCert.filePath);
-    certs[certIndex] = certificate;
-
-    setCerts(certs);
-    return certificate;
-  } catch (e) {
-    // No file Selected
-  }
 }
 
 function deleteCertificateEntry(

@@ -49,7 +49,11 @@ export interface BaseFile {
   filePath: string;
 }
 
-export interface CertFile extends BaseFile { }
+export type CertType = 'rootCert' | 'privateKey' | 'certChain';
+
+export interface CertFile extends BaseFile {
+  type: CertType;
+ }
 
 export interface PlaceholderFile extends FileWithImports {
   isPreloaded?: boolean;
@@ -110,4 +114,10 @@ export enum LoadProtoStatus {
   ok = 1,
   fail = -1,
   part = 0
+}
+
+export enum LoadCertStatus {
+  ok = 3,
+  fail = 4,
+  part = 5
 }

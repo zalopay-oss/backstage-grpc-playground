@@ -4,7 +4,7 @@ import { ScmAuthApi } from "@backstage/integration-react";
 import {
   GrpcPlaygroundApi, GRPCPlaygroundRequestOptions,
   GetProtoPayload, SendRequestPayload, SendRequestResponse,
-  UploadProtoPayload, UploadProtoResponse
+  UploadProtoPayload, UploadProtoResponse, UploadCertificatePayload, UploadCertificateResponse
 } from "./GrpcPlaygroundApi";
 
 export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
@@ -114,5 +114,44 @@ export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
     )
 
     return res;
+  }
+
+  async uploadCertificate(payload: UploadCertificatePayload, options?: GRPCPlaygroundRequestOptions): Promise<UploadCertificateResponse> {
+    const { token } = await this.identityApi.getCredentials();
+    const formData = new FormData();
+
+    if (payload.files) {
+      const files = [payload.files].flat() as File[];
+
+      if (files.length === 0) {
+        throw new Error('Empty');
+      }
+
+      for (const file of files) {
+        formData.append('files[]', file, file.name);
+      }
+    }
+
+    if (payload.fileMappings) {
+      formData.append('fileMappings', JSON.stringify(payload.fileMappings));
+    }
+
+    const fetch = options?.fetcher || this.fetchApi.fetch;
+
+    const res = await fetch(
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/upload-cert/${this.entityName}`,
+      {
+        ...(options?.fetchOptions || {}),
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        method: 'POST',
+        body: formData,
+      },
+    );
+
+    const data = await res.json();
+
+    return data;
   }
 }
