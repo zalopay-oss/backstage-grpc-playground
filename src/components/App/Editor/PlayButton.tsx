@@ -20,6 +20,7 @@ import { GRPCServerRequest, GRPCEventType, ResponseMetaInformation, grpcPlaygrou
 
 import { ProtoContextType, useProtoContext } from '../ProtoProvider';
 import { CertificateContextType, useCertificateContext } from '../CertificateProvider';
+import { isSameCertificate } from '../../../utils/certificates';
 
 type MakeRequestPayload = ControlsStateProps & {
   protoContext: ProtoContextType;
@@ -80,10 +81,9 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, pro
   grpcRequest.on(GRPCEventType.MISSING_IMPORTS, (uploadProtoRes: UploadProtoResponse) => {
     protoContext.handleProtoResult(uploadProtoRes);
 
-    let handlerId: string | undefined;
     // eslint-disable-next-line prefer-const
-    handlerId = protoContext.addUploadedListener(protos => {
-      protoContext.removeUploadedListener(handlerId!);
+    const handlerId = protoContext.addUploadedListener(protos => {
+      protoContext.removeUploadedListener(handlerId);
 
       if (protos.find(p => p.proto.filePath === protoInfo.service.proto.filePath)) {
         // Re-send
@@ -93,15 +93,14 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, pro
   });
 
   grpcRequest.on(GRPCEventType.MISSING_CERTS, (uploadProtoRes: UploadCertificateResponse) => {
-    const selectedCertifcate = grpcRequest.tlsCertificate!;
-    certContext.handleCertResult(uploadProtoRes, selectedCertifcate);
+    const selectedCertificate = grpcRequest.tlsCertificate!;
+    certContext.handleCertResult(uploadProtoRes);
 
-    let handlerId: string | undefined;
     // eslint-disable-next-line prefer-const
-    handlerId = certContext.addUploadedListener((certificate) => {
-      certContext.removeUploadedListener(handlerId!);
+    const handlerId = certContext.addUploadedListener(selectedCertificate, (certificate) => {
+      certContext.removeUploadedListener(selectedCertificate, handlerId);
 
-      if (certificate.rootCert?.filePath === selectedCertifcate?.rootCert?.filePath) {
+      if (isSameCertificate(certificate, selectedCertificate)) {
         // Re-send
         grpcRequest.send();
       }

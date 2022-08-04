@@ -1,18 +1,21 @@
+import { configApiRef, useApi } from "@backstage/core-plugin-api";
 import { notification } from "antd";
 import { fileOpen, FileWithHandle } from "browser-fs-access";
 import React, { PropsWithChildren, useContext, useEffect, useRef, useState } from "react";
-import { CertType, Certificate, UploadCertificateResponse, CertFile, GrpcPlaygroundApi, LoadCertStatus } from "../../api";
-import { getTLSList, storeTLSList } from "../../storage";
+import { CertType, Certificate, UploadCertificateResponse, CertFile, GrpcPlaygroundApi, LoadCertStatus, grpcPlaygroundApiRef } from "../../api";
+import { isSameCertificate, serverCertificate } from "../../utils/certificates";
+import { getTLSList as getTLSListLocal, storeTLSList as storeTLSListLocal } from "../../storage";
 import useEventEmitter, { EventHandler } from "../../utils/useEventEmitter";
 
 export type CertificateContextType = {
-  selectedCertifcate?: Certificate;
+  missingCertificate?: Certificate;
   certs: Certificate[];
   setCerts: (props: Certificate[]) => void;
-  addUploadedListener: (handler: (certificate: Certificate, cert: CertFile) => void) => string;
-  removeUploadedListener: (handlerId: string) => void;
+  addUploadedListener: (selectedCertificate: Certificate, handler: (certificate: Certificate, cert: CertFile) => void) => string;
+  removeUploadedListener: (selectedCertificate: Certificate, handlerId: string) => void;
   handleMissingCert: () => void;
-  handleCertResult: (res: UploadCertificateResponse, tlsSelected: Certificate, successEmit?: boolean) => void;
+  handleCertResult: (res: UploadCertificateResponse, successEmit?: boolean) => void;
+  handleDeleteCertificate: (certificate: Certificate) => Promise<void>;
   toggleModalMissingCerts: () => void;
   handleImportCert: (
     api: GrpcPlaygroundApi,
@@ -21,7 +24,7 @@ export type CertificateContextType = {
     certificate?: Certificate
   ) => Promise<Certificate | undefined>;
   modalMissingCertsOpen: boolean;
-  missingCerts: CertFile[];
+  missingCertFiles: CertFile[];
   ignoreCurrentMissingCert: () => void;
 }
 
@@ -39,20 +42,47 @@ export function useCertificateContext() {
 export function CertificateContextProvider({ children }: PropsWithChildren<{}>) {
   const [certs, setStateCerts] = useState<Certificate[]>([]);
   const [modalMissingCertsOpen, setModalMissingCertsOpen] = useState(false);
-  const selectedCertifcate = useRef<Certificate | undefined>(undefined);
+  const missingCertificate = useRef<Certificate | undefined>(undefined);
+  const grpcPlaygroundApi = useApi(grpcPlaygroundApiRef);
+  const configApi = useApi(configApiRef);
+  const isUseCertStore = !!configApi.getOptional('grpcPlayground.certStore.enabled');
 
-  const missingCerts = React.useRef<CertFile[]>([]);
+  /**
+   * Internal ref of current listener of entities
+   * 
+   * This is for ref only, not real listeners
+   */
+  const currentUploadedListener = useRef<Record<string, string | undefined>>({});
+  const missingCertFiles = React.useRef<CertFile[]>([]);
 
   const { emit: certUploadEmit, addEventListener, removeEventListener } = useEventEmitter('cert-upload');
 
   useEffect(() => {
-    setCerts(getTLSList());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    getTLSList().then(setCerts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
+  async function getTLSList(): Promise<Certificate[]> {
+    // First get from localStorage regardless of isUseCertStore
+    let certificates = getTLSListLocal();
+
+    if (isUseCertStore) {
+      const getCertificateRes = await grpcPlaygroundApi.getCertificates();
+
+      if (Array.isArray(getCertificateRes)) {
+        certificates = getCertificateRes;
+        // serverCertificate is not saved in certStore so always add it to top of the list
+        certificates.splice(0, 0, serverCertificate);
+      }
+    }
+
+    return certificates;
+  }
+
   function setCerts(newCerts: Certificate[]) {
     setStateCerts(newCerts);
-    storeTLSList(newCerts);
+    // Store TLS list in local storage regardless of isUseCertStore
+    storeTLSListLocal(newCerts);
   }
 
   const toggleModalMissingCerts = () => {
@@ -60,79 +90,99 @@ export function CertificateContextProvider({ children }: PropsWithChildren<{}>) 
   }
 
   function handleMissingCert() {
-    const [missingFor] = missingCerts.current || [];
-    if (!missingFor) return;
-
+    if (!missingCertFiles.current?.length) return;
     toggleModalMissingCerts();
   }
 
-  const handleCertResult = (res: UploadCertificateResponse, tlsSelected?: Certificate, successEmit?: boolean) => {
+  const handleCertResult = (res: UploadCertificateResponse, successEmit?: boolean) => {
     const onCertUpload = handleCertUpload(setCerts, certs);
+    const certificate = res.certificate;
 
     if (res.certs) {
-      if (missingCerts.current.length) {
-        missingCerts.current = missingCerts.current.filter(current => {
+      if (missingCertFiles.current.length) {
+        missingCertFiles.current = missingCertFiles.current.filter(current => {
           return !res.certs.find(resolved => resolved.filePath === current.filePath);
         });
       }
     }
 
     if (res.certificate) {
-      selectedCertifcate.current = res.certificate;
+      missingCertificate.current = res.certificate;
     }
 
     switch (res?.status) {
       case LoadCertStatus.part: {
         if (res.missingCerts?.length) {
           if (res.certs) {
-            onCertUpload(res.certs, tlsSelected);
+            onCertUpload(res.certs, certificate);
           }
 
           // Merge missing certs
           const map = new Map<string, CertFile>();
           const addToMap = (cert: CertFile) => map.set(cert.filePath, cert);
 
-          missingCerts.current.concat(res.missingCerts).forEach(addToMap);
-          missingCerts.current = Array.from(map.values());
+          missingCertFiles.current.concat(res.missingCerts).forEach(addToMap);
+          missingCertFiles.current = Array.from(map.values());
         }
         break;
       }
       case LoadCertStatus.ok:
         if (res.certs) {
-          onCertUpload(res.certs, tlsSelected);
+          onCertUpload(res.certs, certificate);
 
-          if (successEmit && !missingCerts.current.length) {
-            certUploadEmit(CertUploadAction.SUCCESS, tlsSelected, res.certs);
+          if (successEmit && !missingCertFiles.current.length) {
+            certUploadEmit(CertUploadAction.SUCCESS, certificate, res.certs);
           }
         }
         break;
 
       default:
       case LoadCertStatus.fail:
-        onCertUpload([], tlsSelected, new Error(res.message || 'Unknown error'));
+        onCertUpload([], certificate, new Error(res.message || 'Unknown error'));
         break;
     }
 
-    if (missingCerts.current.length) {
+    if (missingCertFiles.current.length) {
       // still missing imports
       handleMissingCert();
     }
   }
 
-  const addUploadedListener = (handler: EventHandler) => {
-    return addEventListener(CertUploadAction.SUCCESS, handler);
+  function removeUploadedListener(certificate: Certificate, handlerId: string) {
+    removeEventListener(CertUploadAction.SUCCESS, handlerId);
+    setCurrentUploadedListener(certificate, undefined);
   }
 
-  const removeUploadedListener = (handlerId: string) => {
-    removeEventListener(CertUploadAction.SUCCESS, handlerId);
+  function setCurrentUploadedListener(certificate: Certificate, handlerId: string | undefined) {
+    const rootCertPath = certificate.rootCert.filePath;
+    currentUploadedListener.current[rootCertPath] = handlerId;
+  };
+
+  function getCurrentUploadedListener(certificate: Certificate) {
+    const rootCertPath = certificate.rootCert.filePath;
+    return currentUploadedListener.current[rootCertPath];
+  }
+
+  function addUploadedListener(certificate: Certificate, handler: EventHandler) {
+    const currentListener = getCurrentUploadedListener(certificate);
+
+    if (currentListener) {
+      // Make sure only one listener is registered for one certificate
+      // To prevent multiple listeners for the same certificate 
+      // that can be executed once the certificate is uploaded
+      removeUploadedListener(certificate, currentListener);
+    }
+
+    const handlerId = addEventListener(CertUploadAction.SUCCESS, handler);
+    setCurrentUploadedListener(certificate, handlerId);
+    return handlerId;
   }
 
   const ignoreCurrentMissingCert = () => {
-    missingCerts.current = [];
-
+    missingCertFiles.current = [];
     toggleModalMissingCerts();
 
-    if (missingCerts.current.length) {
+    if (missingCertFiles.current.length) {
       // 100ms is for current modalMissingImport to finish its closing animation
       setTimeout(() => {
         handleMissingCert();
@@ -174,7 +224,7 @@ export function CertificateContextProvider({ children }: PropsWithChildren<{}>) 
             acc[file.name] = {
               filePath: match.filePath,
               fileName: match.fileName,
-              type: match.type
+              type: match.type,
             };
           }
 
@@ -185,10 +235,14 @@ export function CertificateContextProvider({ children }: PropsWithChildren<{}>) 
       const certificateRes = await api.uploadCertificate({
         files: files as any,
         fileMappings,
+        certificate,
       });
 
+      handleCertResult(certificateRes, true);
 
-      handleCertResult(certificateRes, certificate, true);
+      if (certificateRes.certificate) {
+        return certificateRes.certificate;
+      }
     } catch (e) {
       // eslint-disable-next-line no-console
       console.log('OUTPUT ~ CertificateContextProvider ~ err', e);
@@ -198,12 +252,36 @@ export function CertificateContextProvider({ children }: PropsWithChildren<{}>) 
     return certificate;
   }
 
+  async function handleDeleteCertificate(certificate: Certificate) {
+    if (isUseCertStore) {
+      grpcPlaygroundApi.deleteCertificate(certificate.id!)
+        .catch(err => {
+          // eslint-disable-next-line no-console
+          console.log('OUTPUT ~ handleDeleteCertificate ~ err', err);
+        });
+    }
+
+    const certIndex = certs.findIndex((cert) => isSameCertificate(cert, certificate));
+
+    // side-case
+    // also clear missing certs
+    missingCertFiles.current = missingCertFiles.current.filter(c => {
+      return certificate[c.type]?.filePath !== c.filePath;
+    });
+
+    const certificates = [...certs];
+    certificates.splice(certIndex, 1);
+
+    setCerts(certificates);
+  }
+
   return (
     <CertificateContext.Provider
       value={{
         certs,
         setCerts,
-        selectedCertifcate: selectedCertifcate.current,
+        handleDeleteCertificate,
+        missingCertificate: missingCertificate.current,
         handleMissingCert,
         handleCertResult,
         addUploadedListener,
@@ -212,7 +290,7 @@ export function CertificateContextProvider({ children }: PropsWithChildren<{}>) 
         modalMissingCertsOpen,
         handleImportCert,
         ignoreCurrentMissingCert,
-        missingCerts: missingCerts.current,
+        missingCertFiles: missingCertFiles.current,
       }}
     >
       {children}
@@ -224,7 +302,6 @@ function getFileOpenPropsByType(type: CertType | 'multiple') {
   return {
     'rootCert': {
       id: 'root-cert',
-      extensions: ['.crt'],
     },
     'privateKey': {
       id: 'private-key',
@@ -245,7 +322,7 @@ function getFileOpenPropsByType(type: CertType | 'multiple') {
  * @param certs
  */
 export function handleCertUpload(setCerts: React.Dispatch<Certificate[]>, certs: Certificate[]) {
-  return function (newCerts: CertFile[], selectedCertifcate?: Certificate, err?: Error) {
+  return function onCertUpload(newCerts: CertFile[], certificate?: Certificate, err?: Error) {
     if (err) {
       notification.error({
         message: "Error while importing certificates",
@@ -262,24 +339,31 @@ export function handleCertUpload(setCerts: React.Dispatch<Certificate[]>, certs:
     if (newCerts.length) {
       let appCerts = [...certs];
 
-      if (selectedCertifcate) {
+      if (certificate) {
         // Upload private key or cert chain
+        let isFound = false;
+
         appCerts = certs.map(cert => {
-          if (cert.rootCert!.filePath !== selectedCertifcate.rootCert.filePath) {
+          if (!isSameCertificate(cert, certificate)) {
             return cert;
           }
+
+          isFound = true;
 
           const updatedCert = { ...cert };
 
           for (const newCert of newCerts) {
             updatedCert[newCert.type] = {
               ...newCert,
-              // certificate: selectedCertifcate,
             };
           }
 
           return updatedCert;
         });
+
+        if (!isFound) {
+          appCerts.push(certificate);
+        }
       } else {
         // New certificate
         const newCertificate = newCerts.reduce((acc, cert) => {
@@ -291,8 +375,6 @@ export function handleCertUpload(setCerts: React.Dispatch<Certificate[]>, certs:
         appCerts.push(newCertificate);
       }
 
-      // eslint-disable-next-line no-console
-      console.log('OUTPUT ~ appCerts', appCerts);
       setCerts(appCerts);
     }
   }

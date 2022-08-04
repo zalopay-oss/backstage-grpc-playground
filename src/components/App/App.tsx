@@ -92,8 +92,8 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
   } = useProtoContext()!;
 
   const {
-    selectedCertifcate,
-    missingCerts,
+    missingCertificate,
+    missingCertFiles,
     handleImportCert,
     modalMissingCertsOpen,
     ignoreCurrentMissingCert,
@@ -253,8 +253,8 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
     handleImportCert(
       grpcPlaygroundApi,
       undefined,
-      missingCerts,
-      selectedCertifcate,
+      missingCertFiles,
+      missingCertificate,
     );
   }
 
@@ -388,12 +388,12 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
               onCancel={ignoreCurrentMissingCert}
               visible={modalMissingCertsOpen}
             >
-              {missingCerts.length ? (
+              {missingCertFiles.length ? (
                 <>
                   Missing these files
                   <List
                     bordered={false}
-                    dataSource={missingCerts}
+                    dataSource={missingCertFiles}
                     renderItem={item => (
                       <List.Item>
                         <FileOutlined style={{ marginRight: 10 }} />

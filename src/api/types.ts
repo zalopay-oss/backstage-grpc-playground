@@ -37,6 +37,7 @@ export interface EditorRequest {
 }
 
 export interface Certificate {
+  id?: string;
   rootCert: CertFile;
   privateKey?: CertFile;
   certChain?: CertFile;

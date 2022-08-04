@@ -50,7 +50,7 @@ export interface SendRequestPayload {
 export interface UploadCertificatePayload {
   files: File | FileList | File[];
   fileMappings?: Record<string, CertFile>;
-  // type: CertType;
+  certificate?: Certificate;
 }
 
 export interface UploadCertificateResponse {
@@ -58,6 +58,11 @@ export interface UploadCertificateResponse {
   certs: CertFile[];
   certificate?: Certificate;
   missingCerts?: CertFile[];
+  message?: string;
+}
+
+export interface DeleteCertificateResponse {
+  ok: boolean;
   message?: string;
 }
 
@@ -84,5 +89,7 @@ export interface GrpcPlaygroundApi {
   sendServerRequest: SendServerRequest;
   getProto: GetProtoRequest;
   setEntityName: (entity: string) => void;
+  getCertificates: (options?: GRPCPlaygroundRequestOptions) => Promise<Certificate[]>;
+  deleteCertificate: (certificateId: string, options?: GRPCPlaygroundRequestOptions) => Promise<DeleteCertificateResponse>;
   uploadCertificate: (payload: UploadCertificatePayload, options?: GRPCPlaygroundRequestOptions) => Promise<UploadCertificateResponse>;
 }
