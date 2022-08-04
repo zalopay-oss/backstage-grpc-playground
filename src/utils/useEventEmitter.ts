@@ -9,7 +9,7 @@ export default function useEventEmitter(baseName = 'default') {
   const { current: emitter } = useRef<EventEmitter>(new EventEmitter());
   const { current: handlerMap } = useRef<Map<string, EventHandler>>(new Map());
 
-  const getHandlers = (handlerId: string) => handlerMap.get(handlerId);
+  const getHandler = (handlerId: string) => handlerMap.get(handlerId);
 
   const setHandler = (handler: EventHandler) => {
     const handlerId = uuid();
@@ -25,7 +25,7 @@ export default function useEventEmitter(baseName = 'default') {
   }
 
   const removeEventListener = (eventName: string, handlerId: string) => {
-    const handler = getHandlers(handlerId);
+    const handler = getHandler(handlerId);
     if (!handler) return;
 
     emitter.off(`${baseName}:${eventName}`, handler);
