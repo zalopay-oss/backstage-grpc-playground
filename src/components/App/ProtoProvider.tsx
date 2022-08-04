@@ -1,6 +1,6 @@
 import { notification } from 'antd';
 import React, { useContext, useState, } from 'react';
-import { FileWithImports, LoadProtoStatus, OnProtoUpload, ProtoFile, UploadProtoResponse } from '../../api';
+import { FileWithImports, LoadProtoStatus, OnProtoUpload, ProtoFile, ProtoInfo, UploadProtoResponse } from '../../api';
 import { storeProtos } from '../../storage';
 import useEventEmitter, { EventHandler } from '../../utils/useEventEmitter';
 
@@ -8,8 +8,8 @@ export type ProtoContextType = {
   protos: ProtoFile[];
   setProtos: (props: ProtoFile[]) => void;
   handleProtoResult: (res: UploadProtoResponse, successEmit?: boolean) => void;
-  addUploadedListener: (handler: (protos: ProtoFile[]) => void) => string;
-  removeUploadedListener: (handlerId: string) => void;
+  addUploadedListener: (protoInfo: ProtoInfo, handler: (protos: ProtoFile[]) => void) => string;
+  removeUploadedListener: (protoInfo: ProtoInfo, handlerId: string) => void;
   handleMissingImport: () => void;
   toggleModalMissingImports: () => void;
   modalMissingImportsOpen: boolean;
@@ -34,6 +34,7 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
 
   const importFor = React.useRef<FileWithImports | undefined>();
   const missingImports = React.useRef<FileWithImports[]>([]);
+  const currentUploadedListener = React.useRef<Record<string, string | undefined>>({});
 
   const { emit: protoUploadEmit, addEventListener, removeEventListener } = useEventEmitter('proto-upload');
 
@@ -106,12 +107,35 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
   }
 
 
-  const addUploadedListener = (handler: EventHandler) => {
-    return addEventListener(ProtoUploadAction.SUCCESS, handler);
+  const addUploadedListener = (proto: ProtoInfo, handler: EventHandler) => {
+    const currentListener = getCurrentUploadedListener(proto);
+
+    if (currentListener) {
+      // Make sure only one listener is registered for one certificate
+      // To prevent multiple listeners for the same certificate 
+      // that can be executed once the certificate is uploaded
+      removeUploadedListener(proto, currentListener);
+    }
+
+    const handlerId = addEventListener(ProtoUploadAction.SUCCESS, handler);
+    setCurrentUploadedListener(proto, handlerId)
+    return handlerId;
   }
 
-  const removeUploadedListener = (handlerId: string) => {
+  function removeUploadedListener(protoInfo: ProtoInfo, handlerId: string) {
     removeEventListener(ProtoUploadAction.SUCCESS, handlerId);
+    setCurrentUploadedListener(protoInfo);
+  }
+
+  function getCurrentUploadedListener(protoInfo: ProtoInfo) {
+    const protoPath = protoInfo.service.proto.filePath;
+
+    return currentUploadedListener.current[protoPath];
+  }
+
+  function setCurrentUploadedListener(protoInfo: ProtoInfo, handlerId?: string) {
+    const protoPath = protoInfo.service.proto.filePath;
+    currentUploadedListener.current[protoPath] = handlerId;
   }
 
   const ignoreMissingImport = () => {

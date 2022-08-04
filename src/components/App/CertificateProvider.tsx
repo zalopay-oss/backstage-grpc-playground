@@ -150,10 +150,10 @@ export function CertificateContextProvider({ children }: PropsWithChildren<{}>) 
 
   function removeUploadedListener(certificate: Certificate, handlerId: string) {
     removeEventListener(CertUploadAction.SUCCESS, handlerId);
-    setCurrentUploadedListener(certificate, undefined);
+    setCurrentUploadedListener(certificate);
   }
 
-  function setCurrentUploadedListener(certificate: Certificate, handlerId: string | undefined) {
+  function setCurrentUploadedListener(certificate: Certificate, handlerId?: string) {
     const rootCertPath = certificate.rootCert.filePath;
     currentUploadedListener.current[rootCertPath] = handlerId;
   };

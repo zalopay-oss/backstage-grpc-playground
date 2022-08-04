@@ -82,8 +82,8 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, pro
     protoContext.handleProtoResult(uploadProtoRes);
 
     // eslint-disable-next-line prefer-const
-    const handlerId = protoContext.addUploadedListener(protos => {
-      protoContext.removeUploadedListener(handlerId);
+    const handlerId = protoContext.addUploadedListener(protoInfo, protos => {
+      protoContext.removeUploadedListener(protoInfo, handlerId);
 
       if (protos.find(p => p.proto.filePath === protoInfo.service.proto.filePath)) {
         // Re-send
