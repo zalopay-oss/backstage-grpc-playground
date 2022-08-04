@@ -214,3 +214,7 @@ a:hover {
   padding: calc(1em + 1ex);
   right: 0;
 }
+
+.table-tls a {
+  color: #1890ff;
+}
