@@ -16,7 +16,7 @@ export class Store {
     this.name = options.name;
   }
 
-  get(key: string, defaultValue: any = null, emptyCheck?: (val: any) => boolean): any {
+  get<T = any>(key: string, defaultValue: T | null = null, emptyCheck?: (val: T | null) => boolean): T {
     const raw = localStorage.getItem(this.createJoinedKey(key));
     
     let actualVal = defaultValue;
@@ -25,7 +25,7 @@ export class Store {
       try {
         actualVal = JSON.parse(raw);
       } catch (err) {
-        actualVal = raw;
+        // ignore
       }
     }
 
@@ -35,10 +35,10 @@ export class Store {
       }
     }
 
-    return actualVal;
+    return actualVal as T;
   }
 
-  set = (key: string, value: any) => {
+  set = <T = any>(key: string, value: T) => {
     this.keys.push(key);
     localStorage.setItem(this.createJoinedKey(key), JSON.stringify(value));
   }
