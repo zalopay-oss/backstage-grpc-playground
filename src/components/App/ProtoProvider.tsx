@@ -8,8 +8,8 @@ export type ProtoContextType = {
   protos: ProtoFile[];
   setProtos: (props: ProtoFile[]) => void;
   handleProtoResult: (res: UploadProtoResponse, successEmit?: boolean) => void;
-  addUploadedListener: (protoInfo: ProtoInfo, handler: (protos: ProtoFile[]) => void) => string;
-  removeUploadedListener: (protoInfo: ProtoInfo, handlerId: string) => void;
+  addUploadedListener: (protoInfo: ProtoInfo | undefined, handler: (protos: ProtoFile[]) => void) => string;
+  removeUploadedListener: (protoInfo: ProtoInfo | undefined, handlerId: string) => void;
   handleMissingImport: () => void;
   toggleModalMissingImports: () => void;
   modalMissingImportsOpen: boolean;
@@ -107,24 +107,32 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
   }
 
 
-  const addUploadedListener = (proto: ProtoInfo, handler: EventHandler) => {
-    const currentListener = getCurrentUploadedListener(proto);
-
-    if (currentListener) {
-      // Make sure only one listener is registered for one certificate
-      // To prevent multiple listeners for the same certificate 
-      // that can be executed once the certificate is uploaded
-      removeUploadedListener(proto, currentListener);
+  const addUploadedListener = (proto: ProtoInfo | undefined, handler: EventHandler) => {
+    if (proto) {
+      const currentListener = getCurrentUploadedListener(proto);
+  
+      if (currentListener) {
+        // Make sure only one listener is registered for one certificate
+        // To prevent multiple listeners for the same certificate 
+        // that can be executed once the certificate is uploaded
+        removeUploadedListener(proto, currentListener);
+      }
     }
 
     const handlerId = addEventListener(ProtoUploadAction.SUCCESS, handler);
-    setCurrentUploadedListener(proto, handlerId)
+
+    if (proto) {
+      setCurrentUploadedListener(proto, handlerId)
+    }
+
     return handlerId;
   }
 
-  function removeUploadedListener(protoInfo: ProtoInfo, handlerId: string) {
+  function removeUploadedListener(protoInfo: ProtoInfo | undefined, handlerId: string) {
     removeEventListener(ProtoUploadAction.SUCCESS, handlerId);
-    setCurrentUploadedListener(protoInfo);
+    if (protoInfo) {
+      setCurrentUploadedListener(protoInfo);
+    }
   }
 
   function getCurrentUploadedListener(protoInfo: ProtoInfo) {
