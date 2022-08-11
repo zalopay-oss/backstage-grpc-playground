@@ -8,8 +8,8 @@ export type ProtoContextType = {
   protos: ProtoFile[];
   setProtos: (props: ProtoFile[]) => void;
   handleProtoResult: (res: UploadProtoResponse, successEmit?: boolean) => void;
-  addUploadedListener: (protoInfo: ProtoInfo | undefined, handler: (protos: ProtoFile[]) => void) => string;
-  removeUploadedListener: (protoInfo: ProtoInfo | undefined, handlerId: string) => void;
+  addUploadedListener: (handler: (protos: ProtoFile[]) => void, protoInfo?: ProtoInfo) => string;
+  removeUploadedListener: (handlerId: string, protoInfo?: ProtoInfo) => void;
   handleMissingImport: () => void;
   toggleModalMissingImports: () => void;
   modalMissingImportsOpen: boolean;
@@ -107,7 +107,7 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
   }
 
 
-  const addUploadedListener = (proto: ProtoInfo | undefined, handler: EventHandler) => {
+  const addUploadedListener = (handler: EventHandler, proto?: ProtoInfo) => {
     if (proto) {
       const currentListener = getCurrentUploadedListener(proto);
   
@@ -115,7 +115,7 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
         // Make sure only one listener is registered for one certificate
         // To prevent multiple listeners for the same certificate 
         // that can be executed once the certificate is uploaded
-        removeUploadedListener(proto, currentListener);
+        removeUploadedListener(currentListener, proto);
       }
     }
 
@@ -128,7 +128,7 @@ export function ProtoContextProvider({ children }: { children: React.ReactNode }
     return handlerId;
   }
 
-  function removeUploadedListener(protoInfo: ProtoInfo | undefined, handlerId: string) {
+  function removeUploadedListener(handlerId: string, protoInfo?: ProtoInfo) {
     removeEventListener(ProtoUploadAction.SUCCESS, handlerId);
     if (protoInfo) {
       setCurrentUploadedListener(protoInfo);

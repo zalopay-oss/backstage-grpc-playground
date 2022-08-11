@@ -531,8 +531,8 @@ const GrpcDocApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, s
 
     if (isGenDoc) {
       // eslint-disable-next-line prefer-const
-      const handlerId = addUploadedListener(undefined, protos => {
-        removeUploadedListener(undefined, handlerId!);
+      const handlerId = addUploadedListener(protos => {
+        removeUploadedListener(handlerId!);
 
         if (protos?.length) {
           // Select first file to display doc
