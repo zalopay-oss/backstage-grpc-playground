@@ -19,3 +19,32 @@ export function isSameCertificate(cert1?: Certificate, cert2?: Certificate) {
 
   return cert1?.rootCert?.filePath === cert2?.rootCert?.filePath;
 }
+
+
+/**
+ * @see https://www.ssls.com/knowledgebase/what-are-certificate-formats-and-what-is-the-difference-between-them/
+ */
+export const wellKnownCertExtensions = [
+  // Base64 (ASCII)
+  // PEM
+  '.pem',
+  '.crt',
+  '.ca-bundle',
+  // PKCS#7
+  '.p7b',
+  '.p7s',
+
+  // Binary
+  // DER
+  '.der',
+  '.cer',
+  // PKCS#12
+  '.pfx',
+  '.p12',
+];
+
+export const wellKnownPKFileExtensions = [
+  '.pem',
+  '.key',
+  '.pkcs12'
+];

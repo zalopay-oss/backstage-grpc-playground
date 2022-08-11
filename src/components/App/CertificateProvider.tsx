@@ -3,7 +3,7 @@ import { notification } from "antd";
 import { fileOpen, FileWithHandle } from "browser-fs-access";
 import React, { PropsWithChildren, useContext, useEffect, useRef, useState } from "react";
 import { CertType, Certificate, UploadCertificateResponse, CertFile, GrpcPlaygroundApi, LoadCertStatus, grpcPlaygroundApiRef } from "../../api";
-import { isSameCertificate, serverCertificate } from "../../utils/certificates";
+import { isSameCertificate, serverCertificate, wellKnownCertExtensions, wellKnownPKFileExtensions } from "../../utils/certificates";
 import { getTLSList as getTLSListLocal, storeTLSList as storeTLSListLocal } from "../../storage";
 import useEventEmitter, { EventHandler } from "../../utils/useEventEmitter";
 
@@ -201,8 +201,6 @@ export function CertificateContextProvider({ children }: PropsWithChildren<{}>) 
        * Mapping by name
        */
       let fileMappings: Record<string, CertFile>;
-      // const certificate = await importRootCert();
-      // const files: any = await fileOpen(getFileOpenPropsByType(type));
       const files = await fileOpen(getFileOpenPropsByType(singleUploadType ?? 'multiple'));
 
       if (singleUploadType) {
@@ -302,15 +300,19 @@ function getFileOpenPropsByType(type: CertType | 'multiple') {
   return {
     'rootCert': {
       id: 'root-cert',
+      extensions: wellKnownCertExtensions,
     },
     'privateKey': {
       id: 'private-key',
+      extensions: wellKnownPKFileExtensions,
     },
     'certChain': {
       id: 'cert-chain',
+      extensions: wellKnownCertExtensions,
     },
     multiple: {
       id: 'multiple-certs',
+      extensions: wellKnownCertExtensions.concat(wellKnownPKFileExtensions),
       multiple: true,
     }
   }[type];
