@@ -4,8 +4,9 @@ import { ScmAuthApi } from "@backstage/integration-react";
 import {
   GrpcPlaygroundApi, GRPCPlaygroundRequestOptions,
   GetProtoPayload, SendRequestPayload, SendRequestResponse,
-  UploadProtoPayload, UploadProtoResponse
+  UploadProtoPayload, UploadProtoResponse, UploadCertificatePayload, UploadCertificateResponse, DeleteCertificateResponse
 } from "./GrpcPlaygroundApi";
+import { Certificate } from "./types";
 
 export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
   private readonly discoveryApi: DiscoveryApi;
@@ -114,5 +115,87 @@ export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
     )
 
     return res;
+  }
+
+  async getCertificates(options?: GRPCPlaygroundRequestOptions): Promise<Certificate[]> {
+    const { token } = await this.identityApi.getCredentials();
+
+    const res = await this.fetchApi.fetch(
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/certificates/${this.entityName}`,
+      {
+        ...(options?.fetchOptions || {}),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      },
+    )
+
+    const data = await res.json();
+
+    return data;
+  }
+
+  async uploadCertificate(payload: UploadCertificatePayload, options?: GRPCPlaygroundRequestOptions): Promise<UploadCertificateResponse> {
+    const { token } = await this.identityApi.getCredentials();
+    const formData = new FormData();
+
+    if (payload.files) {
+      const files = [payload.files].flat() as File[];
+
+      if (files.length === 0) {
+        throw new Error('Empty');
+      }
+
+      for (const file of files) {
+        formData.append('files[]', file, file.name);
+      }
+    }
+
+    if (payload.fileMappings) {
+      formData.append('fileMappings', JSON.stringify(payload.fileMappings));
+    }
+
+    if (payload.certificate) {
+      formData.append('certificate', JSON.stringify(payload.certificate));
+    }
+
+    const fetch = options?.fetcher || this.fetchApi.fetch;
+
+    const res = await fetch(
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/upload-cert/${this.entityName}`,
+      {
+        ...(options?.fetchOptions || {}),
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        method: 'POST',
+        body: formData,
+      },
+    );
+
+    const data = await res.json();
+
+    return data;
+  }
+
+  async deleteCertificate(certificateId: string, options?: GRPCPlaygroundRequestOptions): Promise<DeleteCertificateResponse> {
+    const { token } = await this.identityApi.getCredentials();
+
+    const res = await this.fetchApi.fetch(
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/certificates/${this.entityName}/${certificateId}`,
+      {
+        ...(options?.fetchOptions || {}),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        method: 'DELETE',
+      },
+    )
+
+    const data = await res.json();
+
+    return data;
   }
 }

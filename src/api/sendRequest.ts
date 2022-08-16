@@ -1,8 +1,8 @@
 // eslint-disable-next-line no-restricted-imports
 import EventEmitter from "events";
 import { ProtoInfo } from "./protoInfo";
-import { Certificate, LoadProtoStatus } from "./types";
-import { SendRequestPayload, SendServerRequest, UploadProtoResponse } from "./GrpcPlaygroundApi";
+import { Certificate, LoadCertStatus, LoadProtoStatus } from "./types";
+import { SendRequestPayload, SendServerRequest, UploadCertificateResponse, UploadProtoResponse } from "./GrpcPlaygroundApi";
 import { v4 as uuid } from 'uuid';
 import { fetchEventSource, FetchEventSourceInit, EventStreamContentType } from '@microsoft/fetch-event-source';
 
@@ -35,6 +35,7 @@ export const GRPCEventType = {
   ERROR: "ERROR",
   END: "END",
   MISSING_IMPORTS: "MISSING_IMPORTS",
+  MISSING_CERTS: "MISSING_CERTS",
 };
 
 interface GrpcResponse {
@@ -104,6 +105,7 @@ export class GRPCServerRequest extends EventEmitter {
           interactive: this.interactive,
           methodName: this.protoInfo.methodName,
           serviceName: this.protoInfo.service.serviceName,
+          tlsCertificate: this.tlsCertificate,
           imports: this.protoInfo.service.proto.imports,
           proto: this.protoInfo.service.proto.filePath,
         };
@@ -144,10 +146,14 @@ export class GRPCServerRequest extends EventEmitter {
                 return; // everything's good
               } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
                 if (res.status === 400) {
-                  const uploadProtoRes = await res.json() as UploadProtoResponse | undefined;
+                  const response = await res.json() as UploadProtoResponse | UploadCertificateResponse | undefined;
 
-                  if (uploadProtoRes?.status === LoadProtoStatus.part) {
-                    this.emit(GRPCEventType.MISSING_IMPORTS, uploadProtoRes);
+                  if (response?.status === LoadProtoStatus.part) {
+                    this.emit(GRPCEventType.MISSING_IMPORTS, response);
+                  }
+
+                  if (response?.status === LoadCertStatus.part) {
+                    this.emit(GRPCEventType.MISSING_CERTS, response);
                   }
                 }
 
@@ -176,10 +182,15 @@ export class GRPCServerRequest extends EventEmitter {
 
             // Unary
             if (res.status === 400) {
-              const uploadProtoRes = await res.json() as UploadProtoResponse | undefined;
+              const response = await res.json() as UploadProtoResponse | UploadCertificateResponse | undefined;
 
-              if (uploadProtoRes?.status === LoadProtoStatus.part) {
-                this.emit(GRPCEventType.MISSING_IMPORTS, uploadProtoRes);
+              if (response?.status === LoadProtoStatus.part) {
+                this.emit(GRPCEventType.MISSING_IMPORTS, response);
+                throw new FatalError();
+              }
+
+              if (response?.status === LoadCertStatus.part) {
+                this.emit(GRPCEventType.MISSING_CERTS, response);
                 throw new FatalError();
               }
             }

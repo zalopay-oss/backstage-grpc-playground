@@ -16,16 +16,19 @@ import {
   addResponseStreamData, setStreamCommitted
 } from './actions';
 import { ControlsStateProps } from './Controls';
-import { GRPCServerRequest, GRPCEventType, ResponseMetaInformation, grpcPlaygroundApiRef, SendServerRequest, UploadProtoResponse } from '../../../api';
+import { GRPCServerRequest, GRPCEventType, ResponseMetaInformation, grpcPlaygroundApiRef, SendServerRequest, UploadProtoResponse, UploadCertificateResponse, Certificate } from '../../../api';
 
 import { ProtoContextType, useProtoContext } from '../ProtoProvider';
+import { CertificateContextType, useCertificateContext } from '../CertificateProvider';
+import { isSameCertificate } from '../../../utils/certificates';
 
 type MakeRequestPayload = ControlsStateProps & {
-  protoContext: ProtoContextType,
-  sendServerRequest: SendServerRequest
+  protoContext: ProtoContextType;
+  certContext: CertificateContextType;
+  sendServerRequest: SendServerRequest;
 }
 
-export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, protoContext }: MakeRequestPayload) => {
+export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, protoContext, certContext }: MakeRequestPayload) => {
   // Do nothing if not set
   if (!protoInfo) {
     return;
@@ -78,12 +81,26 @@ export const makeRequest = ({ dispatch, state, protoInfo, sendServerRequest, pro
   grpcRequest.on(GRPCEventType.MISSING_IMPORTS, (uploadProtoRes: UploadProtoResponse) => {
     protoContext.handleProtoResult(uploadProtoRes);
 
-    let handlerId: string | undefined;
     // eslint-disable-next-line prefer-const
-    handlerId = protoContext.addUploadedListener(protos => {
-      protoContext.removeUploadedListener(handlerId!);
+    const handlerId = protoContext.addUploadedListener(protos => {
+      protoContext.removeUploadedListener(handlerId, protoInfo);
 
       if (protos.find(p => p.proto.filePath === protoInfo.service.proto.filePath)) {
+        // Re-send
+        grpcRequest.send();
+      }
+    }, protoInfo);
+  });
+
+  grpcRequest.on(GRPCEventType.MISSING_CERTS, (uploadProtoRes: UploadCertificateResponse) => {
+    const selectedCertificate = grpcRequest.tlsCertificate!;
+    certContext.handleCertResult(uploadProtoRes);
+
+    // eslint-disable-next-line prefer-const
+    const handlerId = certContext.addUploadedListener(selectedCertificate, (certificate) => {
+      certContext.removeUploadedListener(selectedCertificate, handlerId);
+
+      if (isSameCertificate(certificate, selectedCertificate)) {
         // Re-send
         grpcRequest.send();
       }
@@ -134,6 +151,7 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
   const grpcApi = useApi(grpcPlaygroundApiRef);
   const sendServerRequest = grpcApi.sendServerRequest.bind(grpcApi);
   const protoContext = useProtoContext()!;
+  const certContext = useCertificateContext()!;
 
   React.useEffect(() => {
     if (!active) {
@@ -145,7 +163,7 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
         return
       }
 
-      makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })
+      makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext, certContext })
     })
   }, [
     // a bit of optimisation here: list all state properties needed in this component
@@ -157,11 +175,12 @@ export function PlayButton({ dispatch, state, protoInfo, active }: ControlsState
     state.tlsCertificate,
     sendServerRequest,
     protoContext,
+    certContext,
   ])
 
   const iconProps = {
     style: { ...styles.playIcon, ...(state.loading ? { color: "#ea5d5d" } : {}) },
-    onClick: () => makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext })
+    onClick: () => makeRequest({ dispatch, state, protoInfo, sendServerRequest, protoContext, certContext }),
   }
 
   return state.loading ? (

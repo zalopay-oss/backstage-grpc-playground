@@ -21,5 +21,14 @@ export interface Config {
         ttlInMinutes: number;
       };
     };
+    certStore?: {
+      /**
+       * @visibility frontend
+       */
+      enabled?: boolean;
+      provider?: string;
+      secretKey?: string;
+      initVector?: string;
+    }
   };
 }

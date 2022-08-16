@@ -55,6 +55,7 @@ import { arrayMoveImmutable as arrayMove } from '../../utils'
 import { Store } from '../../storage/Store';
 
 import './app.css';
+import { CertificateContextProvider, useCertificateContext } from './CertificateProvider';
 
 function combineTargetToUrl(target: GRPCTargetInfo): string {
   if (!target.port) {
@@ -89,6 +90,15 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
     importFor,
     ignoreCurrentMissingImport,
   } = useProtoContext()!;
+
+  const {
+    missingCertificate,
+    missingCertFiles,
+    handleImportCert,
+    modalMissingCertsOpen,
+    ignoreCurrentMissingCert,
+    toggleModalMissingCerts,
+  } = useCertificateContext()!;
 
   const grpcPlaygroundApi = useApi(grpcPlaygroundApiRef);
   const configApi = useApi(configApiRef);
@@ -237,6 +247,17 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
     openFileUpload();
   }
 
+  const onClickOpenCertFile = () => {
+    toggleModalMissingCerts();
+
+    handleImportCert(
+      grpcPlaygroundApi,
+      undefined,
+      missingCertFiles,
+      missingCertificate,
+    );
+  }
+
   const onClickOpenDirectory = () => {
     toggleModalMissingImports();
     openFileUpload(true);
@@ -351,6 +372,37 @@ const GrpcPlaygroundApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ a
                 </>
               ) : null}
 
+            </Modal>
+
+            <Modal
+              footer={[
+                <Button key="open-file" icon={<FileAddOutlined />} type="primary" onClick={onClickOpenCertFile}>
+                  Import file
+                </Button>,
+                <Button key="back" danger icon={<StopOutlined />} onClick={ignoreCurrentMissingCert}>
+                  Ignore
+                </Button>,
+              ]}
+              title="Missing certificate files"
+              destroyOnClose
+              onCancel={ignoreCurrentMissingCert}
+              visible={modalMissingCertsOpen}
+            >
+              {missingCertFiles.length ? (
+                <>
+                  Missing these files
+                  <List
+                    bordered={false}
+                    dataSource={missingCertFiles}
+                    renderItem={item => (
+                      <List.Item>
+                        <FileOutlined style={{ marginRight: 10 }} />
+                        {item.filePath}
+                      </List.Item>
+                    )}
+                  />
+                </>
+              ) : null}
             </Modal>
           </Layout.Content>
         </Layout>
@@ -478,9 +530,8 @@ const GrpcDocApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, s
     const isGenDoc = true;
 
     if (isGenDoc) {
-      let handlerId: string | undefined;
       // eslint-disable-next-line prefer-const
-      handlerId = addUploadedListener(protos => {
+      const handlerId = addUploadedListener(protos => {
         removeUploadedListener(handlerId!);
 
         if (protos?.length) {
@@ -589,9 +640,11 @@ const GrpcDocApplication: React.FC<GrpcPlaygroundApplicationProps> = ({ appId, s
 export function StandaloneApp() {
   return (
     <ProtoContextProvider>
-      <GrpcPlaygroundApplication
-        appId={DEFAULT_APP_ID}
-      />
+      <CertificateContextProvider>
+        <GrpcPlaygroundApplication
+          appId={DEFAULT_APP_ID}
+        />
+      </CertificateContextProvider>
     </ProtoContextProvider>
   )
 }
@@ -614,10 +667,12 @@ export function App() {
 
   return (
     <ProtoContextProvider>
-      <GrpcPlaygroundApplication
-        appId={entity?.metadata?.name || DEFAULT_APP_ID}
-        spec={entity?.spec as unknown as (RawEntitySpec | undefined)}
-      />
+      <CertificateContextProvider>
+        <GrpcPlaygroundApplication
+          appId={entity?.metadata?.name || DEFAULT_APP_ID}
+          spec={entity?.spec as unknown as (RawEntitySpec | undefined)}
+        />
+      </CertificateContextProvider>
     </ProtoContextProvider>
   )
 }
