@@ -27,7 +27,7 @@ View [Full changelog](CHANGELOG.md)
 
 ## Requirements
 
-- Backstage ^1.1.0
+- Backstage ^1.5.0
 - Node.JS 14 | 16
 
 ## Methods supported
