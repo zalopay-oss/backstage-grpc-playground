@@ -84,10 +84,17 @@ export interface SendServerRequest {
   (payload: SendRequestPayload, options?: GRPCPlaygroundRequestOptions): Promise<SendRequestResponse>
 }
 
+export interface GetProtoTextResponse {
+  status: LoadProtoStatus;
+  message?: string;
+  protoText?: string;
+}
+
 export interface GrpcPlaygroundApi {
   uploadProto: UploadProtoRequest;
   sendServerRequest: SendServerRequest;
   getProto: GetProtoRequest;
+  getProtoText: (protoPath: string) => Promise<GetProtoTextResponse>;
   setEntityName: (entity: string) => void;
   getCertificates: (options?: GRPCPlaygroundRequestOptions) => Promise<Certificate[]>;
   deleteCertificate: (certificateId: string, options?: GRPCPlaygroundRequestOptions) => Promise<DeleteCertificateResponse>;

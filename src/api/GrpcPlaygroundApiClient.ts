@@ -4,7 +4,8 @@ import { ScmAuthApi } from "@backstage/integration-react";
 import {
   GrpcPlaygroundApi, GRPCPlaygroundRequestOptions,
   GetProtoPayload, SendRequestPayload, SendRequestResponse,
-  UploadProtoPayload, UploadProtoResponse, UploadCertificatePayload, UploadCertificateResponse, DeleteCertificateResponse
+  UploadProtoPayload, UploadProtoResponse, UploadCertificatePayload, UploadCertificateResponse,
+  DeleteCertificateResponse, GetProtoTextResponse
 } from "./GrpcPlaygroundApi";
 import { Certificate } from "./types";
 
@@ -30,6 +31,26 @@ export class GrpcPlaygroundApiClient implements GrpcPlaygroundApi {
     this.fetchApi = options.fetchApi || { fetch: window.fetch.bind(window) };
     this.entityName = '';
   }
+
+  getProtoText = async (protoPath: string, options?: GRPCPlaygroundRequestOptions): Promise<GetProtoTextResponse> => {
+    const { token } = await this.identityApi.getCredentials();
+    const fetch = options?.fetcher || this.fetchApi.fetch;
+    const query = ['filePath', protoPath].join('=');
+
+    const res = await fetch(
+      `${await this.discoveryApi.getBaseUrl('grpc-playground')}/proto-text/${this.entityName}?${query}`,
+      {
+        ...(options?.fetchOptions || {}),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      },
+    );
+
+    const data = await res.json();
+    return data;
+  };
 
   setEntityName = (entityName: string) => {
     this.entityName = entityName;
