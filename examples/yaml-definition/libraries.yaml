@@ -1,0 +1,24 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: helloworld-unary-api
+  description: helloworld unary gRPC
+  
+spec:
+  type: grpc
+  lifecycle: production
+  owner: zalopay-oss
+  definition:
+    $text: https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/unary/helloworld.proto
+  files:
+    - file_name: helloworld.proto
+      file_path: examples/unary/helloworld.proto
+      url: https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/unary/helloworld.proto
+  libraries: 
+    - name: google-apis
+      path: google
+      url: https://github.com/zalopay-oss/backstage-grpc-playground/blob/main/examples/libraries/google-apis
+  targets:
+    dev:
+      host: 0.0.0.0
+      port: 8084
