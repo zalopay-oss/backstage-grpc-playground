@@ -6,7 +6,6 @@ export interface Proto {
   fileName: string;
   filePath: string;
   imports?: PlaceholderFile[];
-  protoText: string;
   protoDoc: string;
   ast: GrpcObject;
   root: Root;
@@ -24,7 +23,6 @@ export type ServiceMethodsPayload = {
 export interface SavedProto {
   fileName: string;
   filePath: string;
-  protoText?: string;
   imports?: PlaceholderFile[];
 }
 

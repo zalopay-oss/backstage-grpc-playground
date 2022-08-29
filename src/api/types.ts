@@ -67,6 +67,14 @@ export interface FileWithImports extends BaseFile {
   missing?: PlaceholderFile[];
 }
 
+export interface Library {
+  isPreloaded?: boolean;
+  version?: string
+  url?: string;
+  name: string;
+  path?: string;
+}
+
 export interface RawPlaceholderFile {
   file_name: string;
   file_path: string;
@@ -74,6 +82,14 @@ export interface RawPlaceholderFile {
   imports?: RawPlaceholderFile[];
   is_library?: boolean;
   url?: string;
+}
+
+export interface RawLibrary {
+  is_preloaded?: boolean;
+  version?: string;
+  url?: string;
+  name: string;
+  path?: string;
 }
 
 export interface EditorTabRequest extends EditorRequest {
@@ -95,6 +111,7 @@ export interface EntitySpec {
   owner: string;
   definition: string;
   files: PlaceholderFile[];
+  libraries?: Library[];
   system?: string;
   targets?: GRPCTarget;
   imports?: PlaceholderFile[];
@@ -108,6 +125,7 @@ export interface RawEntitySpec {
   files: RawPlaceholderFile[];
   system?: string;
   targets?: GRPCTarget;
+  libraries?: RawLibrary[];
   imports?: RawPlaceholderFile[];
 }
 

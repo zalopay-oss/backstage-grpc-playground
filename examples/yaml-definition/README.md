@@ -14,3 +14,7 @@ Configuration explained:
   - file_name
   - url
   - file_path
+- libraries (array, optional): libraries that shared between above proto files
+  - name
+  - url (optional)
+  - path (optional)

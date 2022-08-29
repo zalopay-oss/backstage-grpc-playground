@@ -49,7 +49,9 @@ import {
   UploadProtoResponse,
   EditorTabs,
   PlaceholderFile,
-  RawEntitySpec
+  RawEntitySpec,
+  Library,
+  RawLibrary
 } from '../../api';
 import { arrayMoveImmutable as arrayMove } from '../../utils'
 import { Store } from '../../storage/Store';
@@ -685,6 +687,7 @@ function parseRawEntitySpec(spec?: RawEntitySpec): EntitySpec {
     lifecycle: rawSpec.lifecycle,
     type: rawSpec.type,
     definition: rawSpec.definition,
+    libraries: rawSpec.libraries?.map(mapRawLibrary),
     imports: rawSpec.imports?.map(mapRawPlaceholderFile),
     files: rawSpec.files?.map(mapRawPlaceholderFile) || [],
     targets: rawSpec.targets,
@@ -804,7 +807,22 @@ function handleMethodDoubleClick(editorTabs: EditorTabs, setTabs: React.Dispatch
       tabs: newTabs,
     });
   }
+}
 
+const mapRawLibrary = ({
+  name,
+  path,
+  url,
+  is_preloaded,
+  version,
+}: RawLibrary): Library => {
+  return {
+    path,
+    url,
+    name,
+    isPreloaded: is_preloaded,
+    version
+  }
 }
 
 const mapRawPlaceholderFile = ({

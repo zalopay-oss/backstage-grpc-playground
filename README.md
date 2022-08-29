@@ -27,7 +27,7 @@ View [Full changelog](CHANGELOG.md)
 
 ## Requirements
 
-- Backstage ^1.1.0
+- Backstage ^1.5.0
 - Node.JS 14 | 16
 
 ## Methods supported
@@ -40,7 +40,6 @@ View [Full changelog](CHANGELOG.md)
 
 We are currently not supporting
 
-- SSL call [See issue](https://github.com/zalopay-oss/backstage-grpc-playground/issues/1)
 - Load proto from reflection. [See issue](https://github.com/zalopay-oss/backstage-grpc-playground/issues/2)
 
 ## Install
@@ -131,6 +130,8 @@ Example importing API definition from Github [examples/yaml-definition/unary.yam
 
   - User upload a file "account.proto" that imports some google-apis proto files. In this case user should import google folder
   ![missing import 2](examples/images/missing_import_2.gif)
+- Support generating document file in https://github.com/zalopay-oss/backstage-grpc-playground-backend/pull/1
+- Support proto library https://github.com/zalopay-oss/backstage-grpc-playground/issues/9, see [guide](examples/yaml-definition/libraries.yaml)
 
 ## Yaml file definition
 
